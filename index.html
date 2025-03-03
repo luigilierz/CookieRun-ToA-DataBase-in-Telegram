@@ -172,9 +172,9 @@
         const tokenInput = document.getElementById('token-input');
 
         // Настройки GitHub API
-        const OWNER = 'luigilierz'; // Замените на ваш GitHub-username
-        const REPO = 'CookieRun-ToA-DataBase-in-Telegram'; // Замените на имя репозитория
-        const PATH = 'posts.json'; // Путь к файлу в репозитории
+        const OWNER = 'luiglilerz';
+        const REPO = 'Cool-Fun-TOA-DataBase-in-telegram';
+        const PATH = 'posts.json';
 
         // Получение данных пользователя из Telegram
         const user = Telegram.WebApp.initDataUnsafe.user || {};
@@ -248,49 +248,51 @@
                 if (e.message.includes('404')) {
                     return null; // Если файл не найден, возвращаем null, чтобы создать новый
                 }
-                Telegram.WebApp.showAlert(`Ошибка SHA:\n${e.message}`);
                 throw e;
             }
         }
 
         // Функция для отправки поста в GitHub
         window.submitPost = async function () {
-            Telegram.WebApp.showAlert('Функция submitPost вызвана!'); // Отладка: проверяем, срабатывает ли функция
-
-            const text = postInput.value.trim();
-            const token = tokenInput.value.trim();
-
-            if (!text) {
-                Telegram.WebApp.showAlert('Ошибка: Введите текст поста!');
-                return;
-            }
-            if (!token) {
-                Telegram.WebApp.showAlert('Ошибка: Введите GitHub токен!');
-                return;
-            }
-
-            Telegram.WebApp.showAlert('Проверки пройдены, начинаем отправку поста...'); // Отладка
-
-            const author = user.first_name || user.username || 'Аноним';
-            const newPost = { author, text, created_at: new Date().toISOString() };
-
             try {
+                // Отладка: проверяем, вызвана ли функция
+                Telegram.WebApp.showAlert('Шаг 1: Функция submitPost вызвана!');
+
+                const text = postInput.value.trim();
+                const token = tokenInput.value.trim();
+
+                // Проверка ввода
+                Telegram.WebApp.showAlert('Шаг 2: Проверяем текст и токен...');
+                if (!text) {
+                    Telegram.WebApp.showAlert('Ошибка: Введите текст поста!');
+                    return;
+                }
+                if (!token) {
+                    Telegram.WebApp.showAlert('Ошибка: Введите GitHub токен!');
+                    return;
+                }
+
+                Telegram.WebApp.showAlert('Шаг 3: Проверки пройдены, начинаем отправку поста...');
+
+                const author = user.first_name || user.username || 'Аноним';
+                const newPost = { author, text, created_at: new Date().toISOString() };
+
                 // Проверка токена
-                Telegram.WebApp.showAlert('Проверяем токен...');
-                const tokenCheck = await fetch('https://api.github.com/user', {
+                Telegram.WebApp.showAlert('Шаг 4: Проверяем токен...');
+                const tokenCheckResponse = await fetch('https://api.github.com/user', {
                     headers: {
                         'Authorization': `token ${token}`,
                         'Accept': 'application/vnd.github.v3+json'
                     }
                 });
-                if (!tokenCheck.ok) {
-                    const errorData = await tokenCheck.json();
-                    throw new Error(`Ошибка проверки токена:\n- Статус: ${tokenCheck.status}\n- Сообщение: ${errorData.message || 'Неизвестная ошибка'}\n- Токен (первые 10 символов): ${token.slice(0, 10)}...`);
+                if (!tokenCheckResponse.ok) {
+                    const errorData = await tokenCheckResponse.json();
+                    throw new Error(`Ошибка проверки токена:\n- Статус: ${tokenCheckResponse.status}\n- Сообщение: ${errorData.message || 'Неизвестная ошибка'}\n- Токен (первые 10 символов): ${token.slice(0, 10)}...`);
                 }
-                Telegram.WebApp.showAlert('Токен проверен успешно!');
+                Telegram.WebApp.showAlert('Шаг 5: Токен проверен успешно!');
 
                 // Получение текущих постов
-                Telegram.WebApp.showAlert('Загружаем текущие посты...');
+                Telegram.WebApp.showAlert('Шаг 6: Загружаем текущие посты...');
                 let posts = [];
                 const fetchUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}`;
                 const fetchResponse = await fetch(fetchUrl);
@@ -302,15 +304,16 @@
                     throw new Error(`Не удалось загрузить posts.json:\n- Статус: ${fetchResponse.status}\n- URL: ${fetchUrl}\n- Проверьте наличие файла ${PATH} в репозитории`);
                 }
 
-                Telegram.WebApp.showAlert('Посты загружены, добавляем новый пост...');
+                Telegram.WebApp.showAlert('Шаг 7: Посты загружены, добавляем новый пост...');
                 posts.unshift(newPost);
 
                 // Получение SHA файла
-                Telegram.WebApp.showAlert('Получаем SHA файла...');
+                Telegram.WebApp.showAlert('Шаг 8: Получаем SHA файла...');
                 const sha = await getFileSha(token);
+                Telegram.WebApp.showAlert('Шаг 9: SHA получен или файл будет создан (sha: ' + (sha || 'null') + ')');
 
                 // Обновление файла
-                Telegram.WebApp.showAlert('Обновляем файл на GitHub...');
+                Telegram.WebApp.showAlert('Шаг 10: Обновляем файл на GitHub...');
                 const updateUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
                 const response = await fetch(updateUrl, {
                     method: 'PUT',
@@ -331,7 +334,7 @@
                     throw new Error(`Ошибка GitHub API:\n- Статус: ${response.status}\n- Сообщение: ${errorData.message}\n- Токен (первые 10 символов): ${token.slice(0, 10)}...\n- Репозиторий: ${OWNER}/${REPO}\n- Путь: ${PATH}\n- URL: ${updateUrl}`);
                 }
 
-                Telegram.WebApp.showAlert('Пост успешно добавлен!');
+                Telegram.WebApp.showAlert('Шаг 11: Пост успешно добавлен!');
                 postInput.value = '';
                 fetchPosts();
             } catch (e) {
