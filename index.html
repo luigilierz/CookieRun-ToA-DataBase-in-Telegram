@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-приложение Telegram</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -16,6 +16,7 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: none; /* Отключаем жесты, такие как масштабирование и прокрутка */
         }
 
         .content {
@@ -58,6 +59,7 @@
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             -webkit-user-select: none;
             user-select: none;
+            touch-action: none; /* Отключаем жесты для навигации */
         }
 
         .nav-item {
@@ -67,6 +69,7 @@
             -webkit-tap-highlight-color: transparent;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation; /* Разрешаем только нажатия, но не масштабирование */
         }
 
         .nav-item.active {
@@ -171,6 +174,13 @@
 
         // Устанавливаем "Главная" активной по умолчанию
         document.querySelector('.nav-item[data-page="home"]').classList.add('active');
+
+        // Дополнительная защита от масштабирования и жестов
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.nav-item')) return; // Разрешаем нажатия на кнопки
+            e.preventDefault();
+        }, { passive: false });
     </script>
 </body>
 </html>
