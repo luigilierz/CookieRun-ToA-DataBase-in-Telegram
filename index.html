@@ -16,7 +16,7 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
-            touch-action: none; /* Отключаем жесты, такие как масштабирование и прокрутка */
+            touch-action: none;
         }
 
         .content {
@@ -36,14 +36,51 @@
             display: block;
         }
 
-        .profile-info {
+        .profile-info, .posts-list {
             text-align: left;
             font-size: 18px;
             line-height: 1.5;
         }
 
-        .profile-info p {
+        .profile-info p, .post-item {
             margin: 10px 0;
+        }
+
+        .post-item {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-item span {
+            font-weight: bold;
+            color: #007aff;
+        }
+
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+        }
+
+        .settings-form textarea {
+            resize: none;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .settings-form button {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         .bottom-nav {
@@ -59,7 +96,7 @@
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             -webkit-user-select: none;
             user-select: none;
-            touch-action: none; /* Отключаем жесты для навигации */
+            touch-action: none;
         }
 
         .nav-item {
@@ -69,7 +106,7 @@
             -webkit-tap-highlight-color: transparent;
             -webkit-user-select: none;
             user-select: none;
-            touch-action: manipulation; /* Разрешаем только нажатия, но не масштабирование */
+            touch-action: manipulation;
         }
 
         .nav-item.active {
@@ -94,11 +131,18 @@
 </head>
 <body>
     <div class="content">
-        <div id="home" class="page active">Добро пожаловать!</div>
+        <div id="home" class="page active">
+            <div class="posts-list" id="posts-list"></div>
+        </div>
         <div id="profile" class="page">
             <div class="profile-info" id="profile-info"></div>
         </div>
-        <div id="settings" class="page">Настройки</div>
+        <div id="settings" class="page">
+            <div class="settings-form">
+                <textarea id="post-input" placeholder="Напиши свой пост..." rows="4"></textarea>
+                <button onclick="submitPost()">Отправить</button>
+            </div>
+        </div>
     </div>
     <nav class="bottom-nav">
         <div class="nav-item" data-page="home">
@@ -110,8 +154,8 @@
             <span class="label">Профиль</span>
         </div>
         <div class="nav-item" data-page="settings">
-            <span class="icon">⚙️</span>
-            <span class="label">Настройки</span>
+            <span class="icon">✍️</span>
+            <span class="label">Написать</span>
         </div>
     </nav>
     <script>
@@ -122,6 +166,11 @@
         const navItems = document.querySelectorAll('.nav-item');
         const pages = document.querySelectorAll('.page');
         const profileInfo = document.getElementById('profile-info');
+        const postsList = document.getElementById('posts-list');
+        const postInput = document.getElementById('post-input');
+
+        // Репозиторий постов (временное хранилище)
+        let posts = [];
 
         // Получение данных пользователя из Telegram
         const user = Telegram.WebApp.initDataUnsafe.user || {};
@@ -151,8 +200,29 @@
         if (!profileContent) {
             profileContent = '<p>Информация о пользователе недоступна.</p>';
         }
-
         profileInfo.innerHTML = profileContent;
+
+        // Функция для отображения постов
+        function renderPosts() {
+            postsList.innerHTML = posts.length
+                ? posts.map(post => `<div class="post-item"><span>${post.author}:</span> ${post.text}</div>`).join('')
+                : '<p>Пока нет постов.</p>';
+        }
+
+        // Функция для отправки поста
+        window.submitPost = function () {
+            const text = postInput.value.trim();
+            if (text) {
+                const author = user.first_name || user.username || 'Аноним';
+                posts.unshift({ author, text }); // Добавляем в начало массива
+                postInput.value = ''; // Очищаем поле ввода
+                Telegram.WebApp.showAlert('Пост успешно добавлен!');
+                renderPosts(); // Обновляем список постов
+                Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            } else {
+                Telegram.WebApp.showAlert('Введите текст поста!');
+            }
+        };
 
         // Переключение страниц
         navItems.forEach(item => {
@@ -169,16 +239,22 @@
 
                 // Виброотклик через Telegram API
                 Telegram.WebApp.HapticFeedback.impactOccurred('light');
+
+                // Обновляем посты при переходе на главную
+                if (pageId === 'home') {
+                    renderPosts();
+                }
             });
         });
 
         // Устанавливаем "Главная" активной по умолчанию
         document.querySelector('.nav-item[data-page="home"]').classList.add('active');
+        renderPosts(); // Инициализируем посты при загрузке
 
         // Дополнительная защита от масштабирования и жестов
         document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
         document.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.nav-item')) return; // Разрешаем нажатия на кнопки
+            if (e.target.closest('.nav-item') || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
             e.preventDefault();
         }, { passive: false });
     </script>
