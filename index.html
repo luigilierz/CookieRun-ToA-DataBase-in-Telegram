@@ -213,14 +213,13 @@
                 : '<p>Пока нет постов.</p>';
         }
 
-        // Функция для получения постов из GitHub с повторными попытками
+        // Функция для получения постов из GitHub
         async function fetchPosts(attempt = 1, maxAttempts = 3) {
             try {
                 const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}`;
                 const response = await fetch(url, { cache: 'no-store' });
                 if (!response.ok) {
                     if (response.status === 404 && attempt < maxAttempts) {
-                        // Если 404, ждём 3 секунды и пробуем снова
                         await new Promise(resolve => setTimeout(resolve, 3000));
                         return fetchPosts(attempt + 1, maxAttempts);
                     }
@@ -230,7 +229,6 @@
                 renderPosts(posts);
             } catch (e) {
                 if (e.message.includes('The operation was canceled') && attempt < maxAttempts) {
-                    // Если запрос отменён, пробуем снова
                     await new Promise(resolve => setTimeout(resolve, 3000));
                     return fetchPosts(attempt + 1, maxAttempts);
                 }
@@ -323,13 +321,21 @@
 
                 Telegram.WebApp.showAlert('Пост успешно добавлен!');
                 postInput.value = '';
-                // Ожидаем 3 секунды перед первой попыткой загрузки постов
-                setTimeout(() => fetchPosts(), 3000);
+                // Обновляем посты сразу после отправки
+                fetchPosts();
             } catch (e) {
                 Telegram.WebApp.showAlert(`Ошибка: ${e.message}`);
             }
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
         };
+
+        // Автоматическое обновление постов каждую минуту
+        setInterval(() => {
+            const currentPage = document.querySelector('.page.active');
+            if (currentPage.id === 'home') {
+                fetchPosts();
+            }
+        }, 60000); // 60000 миллисекунд = 1 минута
 
         // Переключение страниц
         navItems.forEach(item => {
@@ -349,6 +355,13 @@
         // Устанавливаем "Главная" активной по умолчанию
         document.querySelector('.nav-item[data-page="home"]').classList.add('active');
         fetchPosts();
+
+        // Дополнительная защита от масштабирования и жестов
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.nav-item') || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+            e.preventDefault();
+        }, { passive: false });
     </script>
 </body>
 </html>
