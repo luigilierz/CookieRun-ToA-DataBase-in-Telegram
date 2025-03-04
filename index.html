@@ -323,7 +323,13 @@
         const boostTimer = document.getElementById('boostTimer');
         const refLink = document.getElementById('refLink');
 
-        loadGame();
+        // Сразу сохраняем начальные данные для нового игрока
+        loadGame(true).then(() => {
+            if (!gameState.lastSync) {
+                saveGame(true); // Принудительное сохранение для нового игрока
+            }
+            updateRating(); // Первичное обновление рейтинга
+        });
 
         clicker.addEventListener('click', () => {
             gameState.clicks++;
@@ -463,8 +469,10 @@
         });
 
         document.getElementById('syncRating').addEventListener('click', () => {
-            updateRating();
-            Telegram.WebApp.showAlert('Рейтинг обновлен!');
+            loadGame(true).then(() => {
+                updateRating();
+                Telegram.WebApp.showAlert('Рейтинг обновлен!');
+            });
         });
 
         refLink.addEventListener('click', () => {
@@ -494,9 +502,8 @@
         }, 60 * 1000);
 
         setInterval(() => {
-            loadGame(true); // Принудительная синхронизация
-            updateRating();
-        }, 10000); // Уменьшено до 10 секунд для более частой синхронизации
+            loadGame(true).then(() => updateRating());
+        }, 5000); // Уменьшено до 5 секунд
 
         function updateDisplay() {
             moneyDisplay.textContent = Math.floor(gameState.money);
@@ -533,38 +540,45 @@
 
         function saveGame(force = false) {
             const now = Date.now();
-            if (force || now - gameState.lastSync >= 5000) {
+            if (force || now - gameState.lastSync >= 3000) { // Уменьшено до 3 секунд
                 gameState.lastSync = now;
                 const data = JSON.stringify(gameState);
-                Telegram.WebApp.CloudStorage.setItem(`gameState_${userId}`, data, (error) => {
-                    if (error) {
-                        console.error('Ошибка сохранения:', error);
-                        setTimeout(() => saveGame(true), 1000);
-                    }
+                return new Promise((resolve, reject) => {
+                    Telegram.WebApp.CloudStorage.setItem(`gameState_${userId}`, data, (error) => {
+                        if (error) {
+                            console.error('Ошибка сохранения:', error);
+                            setTimeout(() => saveGame(true).then(resolve).catch(reject), 1000);
+                        } else {
+                            resolve();
+                        }
+                    });
                 });
-                updateRatingDebounced();
             }
+            return Promise.resolve();
         }
 
         function loadGame(force = false) {
-            Telegram.WebApp.CloudStorage.getItem(`gameState_${userId}`, (error, data) => {
-                if (error) {
-                    console.error('Ошибка загрузки:', error);
-                    saveGame(true);
-                } else if (data) {
-                    const cloudState = JSON.parse(data);
-                    if (force || cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
-                        gameState = { ...gameState, ...cloudState, version: 1 };
-                        updateDisplay();
-                        updateRating();
+            return new Promise((resolve, reject) => {
+                Telegram.WebApp.CloudStorage.getItem(`gameState_${userId}`, (error, data) => {
+                    if (error) {
+                        console.error('Ошибка загрузки:', error);
+                        saveGame(true).then(resolve).catch(reject);
+                    } else if (data) {
+                        const cloudState = JSON.parse(data);
+                        if (force || cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
+                            gameState = { ...gameState, ...cloudState, version: 1 };
+                            updateDisplay();
+                            updateRating();
+                        }
+                        resolve();
+                    } else {
+                        saveGame(true).then(resolve).catch(reject);
                     }
-                } else {
-                    saveGame(true);
-                }
+                });
             });
         }
 
-        const updateRatingDebounced = debounce(updateRating, 1000);
+        const updateRatingDebounced = debounce(updateRating, 500); // Уменьшено до 0.5 секунды
 
         function updateRating() {
             Telegram.WebApp.CloudStorage.getKeys((error, keys) => {
