@@ -213,39 +213,56 @@
                 : '<p>Пока нет постов.</p>';
         }
 
-        // Функция для получения постов из GitHub
-        async function fetchPosts() {
+        // Функция для получения постов из GitHub с повторными попытками
+        async function fetchPosts(attempt = 1, maxAttempts = 3) {
             try {
                 const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}`;
-                const response = await fetch(url, { cache: 'no-store' }); // Отключаем кэш
+                const response = await fetch(url, { cache: 'no-store' });
                 if (!response.ok) {
+                    if (response.status === 404 && attempt < maxAttempts) {
+                        // Если 404, ждём 3 секунды и пробуем снова
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        return fetchPosts(attempt + 1, maxAttempts);
+                    }
                     throw new Error(`Ошибка загрузки постов (${response.status})`);
                 }
                 const posts = await response.json();
                 renderPosts(posts);
             } catch (e) {
-                postsList.innerHTML = `<p>${e.message}</p>`;
+                if (e.message.includes('The operation was canceled') && attempt < maxAttempts) {
+                    // Если запрос отменён, пробуем снова
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    return fetchPosts(attempt + 1, maxAttempts);
+                }
+                postsList.innerHTML = `<p>Ошибка: ${e.message}</p>`;
             }
         }
 
         // Функция для получения SHA текущего файла
         async function getFileSha(token) {
-            const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
+            try {
+                const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        return null; // Если файл не найден, возвращаем null, чтобы создать новый
+                    }
+                    const errorData = await response.json();
+                    throw new Error(`SHA Error (${response.status}): ${errorData.message}`);
                 }
-            });
-            if (!response.ok) {
-                if (response.status === 404) {
-                    return null; // Если файл не найден, возвращаем null, чтобы создать новый
+                const data = await response.json();
+                return data.sha;
+            } catch (e) {
+                if (e.message.includes('The operation was canceled')) {
+                    throw new Error(`SHA Error: The operation was canceled`);
                 }
-                const errorData = await response.json();
-                throw new Error(`SHA Error (${response.status}): ${errorData.message}`);
+                throw e;
             }
-            const data = await response.json();
-            return data.sha;
         }
 
         // Функция для отправки поста в GitHub
@@ -306,8 +323,8 @@
 
                 Telegram.WebApp.showAlert('Пост успешно добавлен!');
                 postInput.value = '';
-                // Ожидаем пару секунд перед обновлением, чтобы GitHub успел обновить файл
-                setTimeout(fetchPosts, 2000);
+                // Ожидаем 3 секунды перед первой попыткой загрузки постов
+                setTimeout(() => fetchPosts(), 3000);
             } catch (e) {
                 Telegram.WebApp.showAlert(`Ошибка: ${e.message}`);
             }
@@ -332,13 +349,6 @@
         // Устанавливаем "Главная" активной по умолчанию
         document.querySelector('.nav-item[data-page="home"]').classList.add('active');
         fetchPosts();
-
-        // Дополнительная защита от масштабирования и жестов
-        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-        document.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.nav-item') || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-            e.preventDefault();
-        }, { passive: false });
     </script>
 </body>
 </html>
