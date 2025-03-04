@@ -32,57 +32,7 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(15px);
             text-align: center;
-            position: relative;
-            overflow: hidden;
         }
-
-        .balance::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent);
-            animation: glow 4s infinite ease-in-out;
-        }
-
-        @keyframes glow {
-            0% { transform: scale(1); opacity: 0.4; }
-            50% { transform: scale(1.1); opacity: 0.6; }
-            100% { transform: scale(1); opacity: 0.4; }
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 6px;
-            margin-top: 15px;
-            overflow: hidden;
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg, #007aff, #00c6ff);
-            border-radius: 6px;
-            transition: width 0.5s ease-in-out;
-            position: relative;
-        }
-
-        .progress::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, rgba(255, 255, 255, 0.15), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
         .clicker-btn {
             width: 200px;
@@ -97,13 +47,9 @@
             margin: 30px auto;
             display: block;
             box-shadow: 0 12px 25px rgba(0, 122, 255, 0.4);
-            position: relative;
-            transition: transform 0.1s, box-shadow 0.2s;
         }
 
-        .clicker-btn:hover { box-shadow: 0 15px 30px rgba(0, 122, 255, 0.6); }
         .clicker-btn:active { transform: scale(0.95); }
-        .clicker-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
 
         .coin-animation {
             position: absolute;
@@ -115,23 +61,8 @@
         }
 
         @keyframes coinRise {
-            0% { opacity: 1; transform: translateY(0) rotate(0deg); }
-            100% { opacity: 0; transform: translateY(-80px) rotate(360deg); }
-        }
-
-        .particles {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: radial-gradient(circle, #ffd700, transparent);
-            border-radius: 50%;
-            animation: particleBurst 1.5s ease-out forwards;
-            z-index: 5;
-        }
-
-        @keyframes particleBurst {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0) translate(${Math.random() * 200 - 100}px, -${Math.random() * 100 + 50}px); }
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-80px); }
         }
 
         .shop-grid {
@@ -149,22 +80,9 @@
             padding: 15px;
             text-align: center;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
         }
 
-        .shop-item:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); }
-        .shop-item.buying { animation: buyAnim 0.4s ease-in-out; }
-
-        @keyframes buyAnim {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-            100% { transform: scale(1); }
-        }
-
-        .shop-item svg { width: 48px; height: 48px; margin: 15px 0; transition: transform 0.3s; }
-        .shop-item:hover svg { transform: scale(1.1); }
+        .shop-item svg { width: 48px; height: 48px; margin: 15px 0; }
         .shop-item .name { font-size: 16px; font-weight: 600; color: #333; }
         .shop-item .price { font-size: 14px; color: #777; margin: 5px 0; }
         .shop-item button {
@@ -176,11 +94,9 @@
             border-radius: 12px;
             font-size: 14px;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
             box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
         }
 
-        .shop-item button:hover { background: linear-gradient(45deg, #005ecb, #00aaff); }
         .shop-item button:active { transform: scale(0.95); }
 
         .rating-item, .achievement {
@@ -191,13 +107,13 @@
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
-            transition: transform 0.2s;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
         }
 
-        .rating-item:hover, .achievement:hover { transform: translateY(-3px); }
-        .achievement { background: linear-gradient(45deg, #e0ffe0, #f0fff0); position: relative; }
-        .achievement::after { content: '✨'; position: absolute; top: 10px; right: 10px; font-size: 20px; animation: sparkle 2s infinite; }
-        @keyframes sparkle { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+        .achievement { background: linear-gradient(45deg, #e0ffe0, #f0fff0); }
+
+        .achievement.fade-out { opacity: 0; }
 
         .bottom-nav {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 245, 255, 0.9));
@@ -215,35 +131,27 @@
         .nav-item {
             text-align: center;
             cursor: pointer;
-            transition: transform 0.2s;
             padding: 8px;
         }
 
-        .nav-item.active { transform: scale(1.15); }
-        .nav-item svg { width: 28px; height: 28px; transition: fill 0.2s; }
-        .nav-item .label { font-size: 11px; color: #666; transition: color 0.2s; }
-        .nav-item.active .label { color: #007aff; }
         .nav-item.active svg { fill: #007aff; }
+        .nav-item.active .label { color: #007aff; }
+        .nav-item svg { width: 28px; height: 28px; display: block; margin: 0 auto; }
+        .nav-item .label { font-size: 11px; color: #666; margin-top: 4px; }
 
         .settings-container {
-            display: grid;
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 15px;
         }
 
-        .settings-main {
+        .settings-main, .settings-sub > div {
             padding: 20px;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 250, 255, 0.95));
             border-radius: 25px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             font-size: 16px;
             font-weight: 500;
-        }
-
-        .settings-sub {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
         }
 
         .settings-btn {
@@ -256,27 +164,10 @@
             font-weight: 500;
             cursor: pointer;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, background 0.2s;
+            margin: 10px 0;
         }
 
-        .settings-btn:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 1); }
-
-        .energy-bar {
-            width: 100%;
-            height: 10px;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-            margin-top: 10px;
-            overflow: hidden;
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .energy {
-            height: 100%;
-            background: linear-gradient(90deg, #34c759, #5dd57e);
-            border-radius: 5px;
-            transition: width 0.3s ease-in-out;
-        }
+        .settings-btn:active { transform: scale(0.98); }
 
         .ref-link {
             padding: 10px;
@@ -286,9 +177,10 @@
             font-size: 12px;
             word-break: break-all;
             cursor: pointer;
+            text-align: center;
         }
 
-        .ref-link:hover { background: rgba(245, 250, 255, 1); }
+        .ref-link:active { background: rgba(245, 250, 255, 1); }
     </style>
 </head>
 <body>
@@ -296,10 +188,6 @@
         <div id="home" class="page active">
             <div class="balance">
                 Баланс: <span id="money">0</span> 💰<br>
-                Уровень: <span id="level">1</span><br>
-                <div class="progress-bar"><div class="progress" id="progress"></div></div>
-                Энергия: <span id="energy">100</span>/100<br>
-                <div class="energy-bar"><div class="energy" id="energyBar"></div></div>
                 <div id="boostTimer"></div>
             </div>
             <button class="clicker-btn" id="clicker">+<span id="clickValue">1</span></button>
@@ -354,11 +242,11 @@
                     </div>
                     <div>
                         <h3>Социальное</h3>
-                        <button class="settings-btn" id="invite">Пригласить друга (+50 💰)</button>
+                        <button class="settings-btn" id="invite">Показать реф. ссылку</button>
                         <button class="settings-btn" id="shareRating">Поделиться результатом</button>
                         <button class="settings-btn" id="sendGift">Отправить подарок (50 💰)</button>
                         <div class="rating-item">Рефералов: <span id="referrals">0</span></div>
-                        <div class="ref-link" id="refLink">t.me/crtoabot?start=ref</div>
+                        <div class="ref-link" id="refLink">Нажми "Показать реф. ссылку" выше</div>
                     </div>
                 </div>
             </div>
@@ -396,16 +284,13 @@
             clicks: 0,
             referrals: 0,
             lastBonus: 0,
-            level: 1,
-            energy: 100,
-            maxEnergy: 100,
             eventActive: false,
             eventEnd: 0,
             premium: false,
             doubleBonus: false,
             theme: 'light',
             lastSync: 0,
-            version: 1 // Для отслеживания изменений структуры данных
+            version: 1
         };
 
         const userId = Telegram.WebApp.initDataUnsafe.user?.id || 'test_user';
@@ -414,29 +299,20 @@
         const moneyDisplay = document.getElementById('money');
         const clicker = document.getElementById('clicker');
         const clickValueDisplay = document.getElementById('clickValue');
-        const levelDisplay = document.getElementById('level');
-        const progressBar = document.getElementById('progress');
-        const energyDisplay = document.getElementById('energy');
-        const energyBar = document.getElementById('energyBar');
         const boostTimer = document.getElementById('boostTimer');
         const refLink = document.getElementById('refLink');
 
         loadGame();
 
         clicker.addEventListener('click', () => {
-            if (gameState.energy > 0) {
-                gameState.clicks++;
-                const earnings = gameState.clickValue * gameState.boostMultiplier * gameState.multiplier * (gameState.eventActive ? 2 : 1);
-                gameState.money += earnings;
-                gameState.energy--;
-                updateDisplay();
-                createCoinAnimation(earnings);
-                Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                checkAchievements();
-                saveGame();
-            } else {
-                Telegram.WebApp.showAlert('Энергия закончилась!');
-            }
+            gameState.clicks++;
+            const earnings = gameState.clickValue * gameState.boostMultiplier * gameState.multiplier * (gameState.eventActive ? 2 : 1);
+            gameState.money += earnings;
+            updateDisplay();
+            createCoinAnimation(earnings);
+            Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            checkAchievements();
+            saveGame();
         });
 
         function createCoinAnimation(amount) {
@@ -446,17 +322,6 @@
             coin.style.left = `${Math.random() * 140}px`;
             clicker.appendChild(coin);
             setTimeout(() => coin.remove(), 1200);
-            if (gameState.premium) createParticles();
-        }
-
-        function createParticles() {
-            for (let i = 0; i < 8; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particles';
-                particle.style.left = `${Math.random() * 180}px`;
-                clicker.appendChild(particle);
-                setTimeout(() => particle.remove(), 1500);
-            }
         }
 
         const navItems = document.querySelectorAll('.nav-item');
@@ -483,8 +348,6 @@
                     if (upgrade === 'auto') gameState.autoClick += 1;
                     if (upgrade === 'boost') { gameState.boostMultiplier = 2; gameState.boostTime = Date.now() + 30 * 60 * 1000; }
                     if (upgrade === 'premium') gameState.premium = true;
-                    button.parentElement.classList.add('buying');
-                    setTimeout(() => button.parentElement.classList.remove('buying'), 400);
                     updateDisplay();
                     saveGame();
                     Telegram.WebApp.showAlert('Куплено!');
@@ -523,7 +386,7 @@
         document.getElementById('reset').addEventListener('click', () => {
             Telegram.WebApp.showConfirm('Сбросить прогресс?', (confirmed) => {
                 if (confirmed) {
-                    gameState = { money: 0, clickValue: 1, autoClick: 0, boostMultiplier: 1, boostTime: 0, multiplier: 1, clicks: 0, referrals: 0, lastBonus: 0, level: 1, energy: 100, maxEnergy: 100, eventActive: false, eventEnd: 0, premium: false, doubleBonus: false, theme: 'light', lastSync: Date.now(), version: 1 };
+                    gameState = { money: 0, clickValue: 1, autoClick: 0, boostMultiplier: 1, boostTime: 0, multiplier: 1, clicks: 0, referrals: 0, lastBonus: 0, eventActive: false, eventEnd: 0, premium: false, doubleBonus: false, theme: 'light', lastSync: Date.now(), version: 1 };
                     updateDisplay();
                     saveGame(true);
                     updateRating();
@@ -540,17 +403,12 @@
 
         document.getElementById('invite').addEventListener('click', () => {
             const refUrl = `t.me/${botUsername}?start=ref${userId}`;
-            Telegram.WebApp.showAlert('Приглашайте друзей по ссылке ниже!');
-            gameState.referrals++;
-            gameState.money += 50;
-            updateDisplay();
-            saveGame();
-            updateRating();
             refLink.textContent = refUrl;
+            Telegram.WebApp.showAlert('Ссылка обновлена ниже. Нажми на нее, чтобы скопировать!');
         });
 
         document.getElementById('shareRating').addEventListener('click', () => {
-            Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=Мой результат: ${gameState.money} 💰, уровень ${gameState.level}!`);
+            Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=Мой результат: ${gameState.money} 💰`);
         });
 
         document.getElementById('sendGift').addEventListener('click', () => {
@@ -577,7 +435,6 @@
             gameState.money += gameState.autoClick * gameState.boostMultiplier * gameState.multiplier * (gameState.eventActive ? 2 : 1);
             if (gameState.boostTime && Date.now() > gameState.boostTime) { gameState.boostMultiplier = 1; gameState.boostTime = 0; }
             if (gameState.eventEnd && Date.now() > gameState.eventEnd) { gameState.eventActive = false; gameState.eventEnd = 0; }
-            if (gameState.energy < gameState.maxEnergy) gameState.energy += 0.2;
             updateDisplay();
             saveGame();
         }, 1000);
@@ -592,36 +449,39 @@
         }, 60 * 1000);
 
         setInterval(() => {
-            loadGame(); // Периодическая синхронизация
-        }, 15000); // Уменьшено до 15 секунд для более частой проверки
+            loadGame();
+        }, 15000);
 
         function updateDisplay() {
             moneyDisplay.textContent = Math.floor(gameState.money);
             clickValueDisplay.textContent = Math.floor(gameState.clickValue * gameState.boostMultiplier * gameState.multiplier * (gameState.eventActive ? 2 : 1));
-            levelDisplay.textContent = gameState.level;
-            progressBar.style.width = `${(gameState.money % 1000) / 10}%`;
-            if (gameState.money >= gameState.level * 1000) gameState.level++;
-            energyDisplay.textContent = Math.floor(gameState.energy);
-            energyBar.style.width = `${(gameState.energy / gameState.maxEnergy) * 100}%`;
-            clicker.disabled = gameState.energy <= 0;
             boostTimer.textContent = gameState.boostTime ? `Бустер: ${Math.ceil((gameState.boostTime - Date.now()) / 1000)} сек` : (gameState.eventActive ? `Событие: ${Math.ceil((gameState.eventEnd - Date.now()) / 1000)} сек` : '');
             document.getElementById('referrals').textContent = gameState.referrals;
-            refLink.textContent = `t.me/${botUsername}?start=ref${userId}`;
         }
 
         function checkAchievements() {
             const achievements = document.getElementById('achievements');
             if (gameState.clicks >= 100 && !achievements.querySelector('.click100')) {
-                achievements.innerHTML += '<div class="achievement click100">100 кликов! (+50 💰)</div>';
+                const achievement = document.createElement('div');
+                achievement.className = 'achievement click100';
+                achievement.textContent = '100 кликов! (+50 💰)';
+                achievements.appendChild(achievement);
                 gameState.money += 50;
+                setTimeout(() => {
+                    achievement.classList.add('fade-out');
+                    setTimeout(() => achievement.remove(), 500); // Удаление после завершения анимации
+                }, 5000); // Исчезает через 5 секунд
             }
             if (gameState.money >= 1000 && !achievements.querySelector('.money1000')) {
-                achievements.innerHTML += '<div class="achievement money1000">1000 монет! (+100 💰)</div>';
+                const achievement = document.createElement('div');
+                achievement.className = 'achievement money1000';
+                achievement.textContent = '1000 монет! (+100 💰)';
+                achievements.appendChild(achievement);
                 gameState.money += 100;
-            }
-            if (gameState.level >= 5 && !achievements.querySelector('.level5')) {
-                achievements.innerHTML += '<div class="achievement level5">Уровень 5! (+200 💰)</div>';
-                gameState.money += 200;
+                setTimeout(() => {
+                    achievement.classList.add('fade-out');
+                    setTimeout(() => achievement.remove(), 500);
+                }, 5000);
             }
         }
 
@@ -648,7 +508,7 @@
                 } else if (data) {
                     const cloudState = JSON.parse(data);
                     if (cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
-                        gameState = { ...gameState, ...cloudState, version: 1 }; // Обновляем только новые данные
+                        gameState = { ...gameState, ...cloudState, version: 1 };
                         updateDisplay();
                         updateRating();
                     }
@@ -658,7 +518,6 @@
             });
         }
 
-        // Дебаунс для обновления рейтинга
         const updateRatingDebounced = debounce(updateRating, 2000);
 
         function updateRating() {
@@ -672,7 +531,7 @@
                             const state = JSON.parse(value);
                             return { id: key.split('_')[1], money: state.money, referrals: state.referrals };
                         })
-                        .filter(user => user.money >= 0 && user.referrals >= 0); // Фильтр некорректных данных
+                        .filter(user => user.money >= 0 && user.referrals >= 0);
                     allUsers.sort((a, b) => b.money - a.money);
                     const moneyRating = allUsers.slice(0, 5).map((user, i) => 
                         `<div class="rating-item">${i + 1}. ${user.id === userId ? 'Вы' : 'Игрок'} - ${Math.floor(user.money)} 💰</div>`
@@ -701,18 +560,6 @@
                 .then(() => console.log('Service Worker Registered'))
                 .catch(err => console.error('SW Error:', err));
         }
-
-        // Предварительная загрузка ресурсов
-        const prefetchResources = () => {
-            const resources = ['/sw.js']; // Добавьте другие ресурсы, если есть
-            resources.forEach(url => {
-                const link = document.createElement('link');
-                link.rel = 'prefetch';
-                link.href = url;
-                document.head.appendChild(link);
-            });
-        };
-        prefetchResources();
     </script>
 </body>
 </html>
