@@ -323,12 +323,12 @@
         const boostTimer = document.getElementById('boostTimer');
         const refLink = document.getElementById('refLink');
 
-        // Сразу сохраняем начальные данные для нового игрока
-        loadGame(true).then(() => {
-            if (!gameState.lastSync) {
-                saveGame(true); // Принудительное сохранение для нового игрока
-            }
-            updateRating(); // Первичное обновление рейтинга
+        // Немедленное сохранение и синхронизация при запуске
+        saveGame(true).then(() => {
+            loadGame(true).then(() => {
+                console.log('Инициализация завершена:', gameState);
+                updateRating();
+            });
         });
 
         clicker.addEventListener('click', () => {
@@ -502,8 +502,11 @@
         }, 60 * 1000);
 
         setInterval(() => {
-            loadGame(true).then(() => updateRating());
-        }, 5000); // Уменьшено до 5 секунд
+            loadGame(true).then(() => {
+                updateRating();
+                console.log('Синхронизация выполнена. Все игроки:', document.getElementById('ratingMoney').innerHTML);
+            });
+        }, 5000);
 
         function updateDisplay() {
             moneyDisplay.textContent = Math.floor(gameState.money);
@@ -540,15 +543,17 @@
 
         function saveGame(force = false) {
             const now = Date.now();
-            if (force || now - gameState.lastSync >= 3000) { // Уменьшено до 3 секунд
+            if (force || now - gameState.lastSync >= 3000) {
                 gameState.lastSync = now;
                 const data = JSON.stringify(gameState);
                 return new Promise((resolve, reject) => {
                     Telegram.WebApp.CloudStorage.setItem(`gameState_${userId}`, data, (error) => {
                         if (error) {
                             console.error('Ошибка сохранения:', error);
+                            Telegram.WebApp.showAlert('Ошибка сохранения данных!');
                             setTimeout(() => saveGame(true).then(resolve).catch(reject), 1000);
                         } else {
+                            console.log('Данные сохранены:', gameState);
                             resolve();
                         }
                     });
@@ -562,30 +567,48 @@
                 Telegram.WebApp.CloudStorage.getItem(`gameState_${userId}`, (error, data) => {
                     if (error) {
                         console.error('Ошибка загрузки:', error);
+                        Telegram.WebApp.showAlert('Ошибка загрузки данных!');
                         saveGame(true).then(resolve).catch(reject);
                     } else if (data) {
                         const cloudState = JSON.parse(data);
                         if (force || cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
                             gameState = { ...gameState, ...cloudState, version: 1 };
                             updateDisplay();
-                            updateRating();
+                            console.log('Данные загружены:', gameState);
                         }
                         resolve();
                     } else {
+                        console.log('Нет данных в облаке, сохраняем начальные');
                         saveGame(true).then(resolve).catch(reject);
                     }
                 });
             });
         }
 
-        const updateRatingDebounced = debounce(updateRating, 500); // Уменьшено до 0.5 секунды
+        const updateRatingDebounced = debounce(updateRating, 500);
 
         function updateRating() {
             Telegram.WebApp.CloudStorage.getKeys((error, keys) => {
-                if (error) return;
+                if (error) {
+                    console.error('Ошибка получения ключей:', error);
+                    Telegram.WebApp.showAlert('Ошибка загрузки рейтинга!');
+                    return;
+                }
+                console.log('Найденные ключи:', keys);
                 const userKeys = keys.filter(key => key.startsWith('gameState_'));
+                if (userKeys.length === 0) {
+                    document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3><p>Пока нет игроков</p>';
+                    document.getElementById('ratingRefs').innerHTML = '<h3>По рефералам:</h3><p>Пока нет игроков</p>';
+                    return;
+                }
+
                 Telegram.WebApp.CloudStorage.getItems(userKeys, (error, items) => {
-                    if (error) return;
+                    if (error) {
+                        console.error('Ошибка получения данных игроков:', error);
+                        Telegram.WebApp.showAlert('Ошибка загрузки данных игроков!');
+                        return;
+                    }
+                    console.log('Данные всех игроков:', items);
                     const allUsers = Object.entries(items)
                         .map(([key, value]) => {
                             const state = JSON.parse(value);
@@ -599,8 +622,14 @@
                         })
                         .filter(user => user.money >= 0 && user.referrals >= 0);
 
+                    if (allUsers.length === 0) {
+                        document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3><p>Пока нет игроков</p>';
+                        document.getElementById('ratingRefs').innerHTML = '<h3>По рефералам:</h3><p>Пока нет игроков</p>';
+                        return;
+                    }
+
                     allUsers.sort((a, b) => b.money - a.money);
-                    const moneyRating = allUsers.slice(0, 5).map((user, i) => `
+                    const moneyRating = allUsers.map((user, i) => `
                         <div class="rating-item">
                             <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
                             <div class="info">
@@ -612,7 +641,7 @@
                     document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3>' + moneyRating;
 
                     allUsers.sort((a, b) => b.referrals - a.referrals);
-                    const refRating = allUsers.slice(0, 5).map((user, i) => `
+                    const refRating = allUsers.map((user, i) => `
                         <div class="rating-item">
                             <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
                             <div class="info">
