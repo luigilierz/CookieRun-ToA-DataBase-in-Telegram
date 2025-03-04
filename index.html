@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         body {
             margin: 0;
@@ -306,6 +309,19 @@
         Telegram.WebApp.ready();
         document.body.style.backgroundColor = Telegram.WebApp.themeParams.bg_color || '#f5f7fa';
 
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4t7r9mc3b5p7uH2XqZ9zZ9zZ9zZ9zZ9", // Замените на ваш API Key
+            authDomain: "clicker-game-ranking.firebaseapp.com", // Замените на ваш authDomain
+            databaseURL: "https://clicker-game-ranking-default-rtdb.firebaseio.com", // Замените на ваш databaseURL
+            projectId: "clicker-game-ranking", // Замените на ваш projectId
+            storageBucket: "clicker-game-ranking.appspot.com", // Замените на ваш storageBucket
+            messagingSenderId: "123456789012", // Замените на ваш messagingSenderId
+            appId: "1:123456789012:web:abcdef1234567890abcdef" // Замените на ваш appId
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         let gameState = {
             money: 0,
             clickValue: 1,
@@ -337,6 +353,15 @@
         const refLink = document.getElementById('refLink');
         const debugPanel = document.getElementById('debugPanel');
 
+        // Функция для логирования в панель
+        function debugLog(message) {
+            const panel = document.getElementById('debugPanel');
+            const time = new Date().toLocaleTimeString();
+            panel.innerHTML += `[${time}] ${message}<br>`;
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        // Загрузка данных из localStorage
         loadGame();
 
         clicker.addEventListener('click', () => {
@@ -509,7 +534,8 @@
 
         setInterval(() => {
             loadGame();
-        }, 15000);
+            updateRating();
+        }, 10000); // Обновление рейтинга каждые 10 секунд
 
         function updateDisplay() {
             moneyDisplay.textContent = Math.floor(gameState.money);
@@ -548,91 +574,100 @@
             const now = Date.now();
             if (force || now - gameState.lastSync >= 5000) {
                 gameState.lastSync = now;
-                const data = JSON.stringify(gameState);
-                Telegram.WebApp.CloudStorage.setItem(`gameState_${userId}`, data, (error) => {
+                // Сохраняем локально
+                localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState));
+                debugLog('Сохранено локально: Баланс=' + gameState.money);
+
+                // Сохраняем на сервер
+                database.ref('players/' + userId).set({
+                    money: gameState.money,
+                    referrals: gameState.referrals,
+                    username: gameState.username,
+                    photoUrl: gameState.photoUrl,
+                    lastSync: now
+                }, (error) => {
                     if (error) {
-                        debugLog('Ошибка сохранения: ' + error);
+                        debugLog('Ошибка сохранения на сервер: ' + error);
                     } else {
-                        debugLog('Данные сохранены: Баланс=' + gameState.money);
+                        debugLog('Сохранено на сервер: Баланс=' + gameState.money);
                     }
                 });
-                updateRatingDebounced();
             }
         }
 
         function loadGame() {
-            Telegram.WebApp.CloudStorage.getItem(`gameState_${userId}`, (error, data) => {
-                if (error) {
-                    debugLog('Ошибка загрузки: ' + error);
-                    saveGame(true);
-                } else if (data) {
-                    const cloudState = JSON.parse(data);
-                    if (cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
-                        gameState = { ...gameState, ...cloudState, version: 1 };
-                        updateDisplay();
-                        updateRating();
-                        debugLog('Данные загружены: Баланс=' + gameState.money);
-                    }
-                } else {
-                    saveGame(true);
-                    debugLog('Нет данных в облаке, сохранены начальные');
+            const localData = localStorage.getItem(`gameState_${userId}`);
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                gameState = { ...gameState, ...parsed };
+                updateDisplay();
+                debugLog('Загружено локально: Баланс=' + gameState.money);
+            }
+
+            // Загружаем с сервера
+            database.ref('players/' + userId).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.lastSync > gameState.lastSync) {
+                    gameState.money = data.money || 0;
+                    gameState.referrals = data.referrals || 0;
+                    gameState.username = data.username || gameState.username;
+                    gameState.photoUrl = data.photoUrl || gameState.photoUrl;
+                    gameState.lastSync = data.lastSync || Date.now();
+                    updateDisplay();
+                    debugLog('Загружено с сервера: Баланс=' + gameState.money);
                 }
+            }, (error) => {
+                debugLog('Ошибка загрузки с сервера: ' + error);
             });
         }
 
-        const updateRatingDebounced = debounce(updateRating, 2000);
-
         function updateRating() {
-            Telegram.WebApp.CloudStorage.getKeys((error, keys) => {
-                if (error) {
-                    debugLog('Ошибка получения ключей: ' + error);
+            database.ref('players').once('value', (snapshot) => {
+                const allPlayers = snapshot.val();
+                if (!allPlayers) {
+                    document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3><p>Пока нет игроков</p>';
+                    document.getElementById('ratingRefs').innerHTML = '<h3>По рефералам:</h3><p>Пока нет игроков</p>';
+                    debugLog('Рейтинг: Нет игроков на сервере');
                     return;
                 }
-                debugLog('Найденные ключи: ' + keys.join(', '));
-                const userKeys = keys.filter(key => key.startsWith('gameState_'));
-                Telegram.WebApp.CloudStorage.getItems(userKeys, (error, items) => {
-                    if (error) {
-                        debugLog('Ошибка получения данных игроков: ' + error);
-                        return;
-                    }
-                    debugLog('Данные игроков: ' + JSON.stringify(items));
-                    const allUsers = Object.entries(items)
-                        .map(([key, value]) => {
-                            const state = JSON.parse(value);
-                            return { 
-                                id: key.split('_')[1], 
-                                money: state.money, 
-                                referrals: state.referrals, 
-                                username: state.username || 'Player', 
-                                photoUrl: state.photoUrl || ''
-                            };
-                        })
-                        .filter(user => user.money >= 0 && user.referrals >= 0);
 
-                    allUsers.sort((a, b) => b.money - a.money);
-                    const moneyRating = allUsers.slice(0, 5).map((user, i) => `
-                        <div class="rating-item">
-                            <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
-                            <div class="info">
-                                <div class="username">${i + 1}. ${user.username}</div>
-                                <div class="score">${Math.floor(user.money)} 💰</div>
-                            </div>
-                        </div>
-                    `).join('');
-                    document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3>' + moneyRating;
+                debugLog('Рейтинг: Загружено ' + Object.keys(allPlayers).length + ' игроков');
 
-                    allUsers.sort((a, b) => b.referrals - a.referrals);
-                    const refRating = allUsers.slice(0, 5).map((user, i) => `
-                        <div class="rating-item">
-                            <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
-                            <div class="info">
-                                <div class="username">${i + 1}. ${user.username}</div>
-                                <div class="score">${user.referrals} реф.</div>
-                            </div>
+                const allUsers = Object.entries(allPlayers)
+                    .map(([id, data]) => ({
+                        id,
+                        money: data.money || 0,
+                        referrals: data.referrals || 0,
+                        username: data.username || 'Player',
+                        photoUrl: data.photoUrl || ''
+                    }))
+                    .filter(user => user.money >= 0 && user.referrals >= 0);
+
+                allUsers.sort((a, b) => b.money - a.money);
+                const moneyRating = allUsers.slice(0, 5).map((user, i) => `
+                    <div class="rating-item">
+                        <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
+                        <div class="info">
+                            <div class="username">${i + 1}. ${user.username}</div>
+                            <div class="score">${Math.floor(user.money)} 💰</div>
                         </div>
-                    `).join('');
-                    document.getElementById('ratingRefs').innerHTML = '<h3>По рефералам:</h3>' + refRating;
-                });
+                    </div>
+                `).join('');
+                document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3>' + moneyRating;
+
+                allUsers.sort((a, b) => b.referrals - a.referrals);
+                const refRating = allUsers.slice(0, 5).map((user, i) => `
+                    <div class="rating-item">
+                        <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
+                        <div class="info">
+                            <div class="username">${i + 1}. ${user.username}</div>
+                            <div class="score">${user.referrals} реф.</div>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('ratingRefs').innerHTML = '<h3>По рефералам:</h3>' + refRating;
+            }, (error) => {
+                debugLog('Ошибка загрузки рейтинга: ' + error);
             });
         }
 
@@ -644,18 +679,8 @@
             };
         }
 
-        function debugLog(message) {
-            const panel = document.getElementById('debugPanel');
-            const time = new Date().toLocaleTimeString();
-            panel.innerHTML += `[${time}] ${message}<br>`;
-            panel.scrollTop = panel.scrollHeight; // Прокрутка вниз
-        }
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(() => debugLog('Service Worker зарегистрирован'))
-                .catch(err => debugLog('Ошибка Service Worker: ' + err));
-        }
+        // Убираем Service Worker, так как он не используется
+        debugLog('Service Worker отключен из-за отсутствия sw.js');
     </script>
 </body>
 </html>
