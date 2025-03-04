@@ -172,8 +172,8 @@
         const tokenInput = document.getElementById('token-input');
 
         // Настройки GitHub API
-        const OWNER = 'luigilierz';
-        const REPO = 'CookieRun-ToA-DataBase-in-Telegram';
+        const OWNER = 'luiglilerz';
+        const REPO = 'Cool-Fun-TOA-DataBase-in-telegram';
         const PATH = 'posts.json';
 
         // Получение данных пользователя из Telegram
@@ -217,7 +217,7 @@
         async function fetchPosts() {
             try {
                 const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}`;
-                const response = await fetch(url);
+                const response = await fetch(url, { cache: 'no-store' }); // Отключаем кэш
                 if (!response.ok) {
                     throw new Error(`Ошибка загрузки постов (${response.status})`);
                 }
@@ -306,7 +306,8 @@
 
                 Telegram.WebApp.showAlert('Пост успешно добавлен!');
                 postInput.value = '';
-                fetchPosts();
+                // Ожидаем пару секунд перед обновлением, чтобы GitHub успел обновить файл
+                setTimeout(fetchPosts, 2000);
             } catch (e) {
                 Telegram.WebApp.showAlert(`Ошибка: ${e.message}`);
             }
