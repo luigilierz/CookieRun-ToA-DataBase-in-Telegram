@@ -171,9 +171,10 @@
         const postInput = document.getElementById('post-input');
         const tokenInput = document.getElementById('token-input');
 
-        const OWNER = 'luigilierz'; // Замените на ваш GitHub-username
-        const REPO = 'CookieRun-ToA-DataBase-in-Telegram'; // Замените на имя репозитория
-        const PATH = 'posts.json'; // Путь к файлу в репозитории
+        // Настройки GitHub API
+        const OWNER = 'luigilierz';
+        const REPO = 'CookieRun-ToA-DataBase-in-Telegram';
+        const PATH = 'posts.json';
 
         // Получение данных пользователя из Telegram
         const user = Telegram.WebApp.initDataUnsafe.user || {};
@@ -218,80 +219,54 @@
                 const url = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}`;
                 const response = await fetch(url);
                 if (!response.ok) {
-                    throw new Error(`Не удалось загрузить posts.json:\n- Статус: ${response.status}\n- URL: ${url}\n- Проверьте, существует ли файл ${PATH} в репозитории ${OWNER}/${REPO}`);
+                    throw new Error(`Ошибка загрузки постов (${response.status})`);
                 }
                 const posts = await response.json();
                 renderPosts(posts);
             } catch (e) {
-                postsList.innerHTML = `<p>Ошибка загрузки постов:\n${e.message}</p>`;
+                postsList.innerHTML = `<p>${e.message}</p>`;
             }
         }
 
         // Функция для получения SHA текущего файла
         async function getFileSha(token) {
-            try {
-                const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Не удалось получить SHA файла:\n- Статус: ${response.status}\n- Сообщение: ${errorData.message || 'Неизвестная ошибка'}\n- Токен (первые 10 символов): ${token.slice(0, 10)}...\n- URL: ${url}\n- Проверьте OWNER, REPO и наличие файла ${PATH}`);
+            const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
                 }
-                const data = await response.json();
-                return data.sha;
-            } catch (e) {
-                if (e.message.includes('404')) {
+            });
+            if (!response.ok) {
+                if (response.status === 404) {
                     return null; // Если файл не найден, возвращаем null, чтобы создать новый
                 }
-                throw e;
+                const errorData = await response.json();
+                throw new Error(`SHA Error (${response.status}): ${errorData.message}`);
             }
+            const data = await response.json();
+            return data.sha;
         }
 
         // Функция для отправки поста в GitHub
         window.submitPost = async function () {
             try {
-                // Отладка: проверяем, вызвана ли функция
-                Telegram.WebApp.showAlert('Шаг 1: Функция submitPost вызвана!');
-
                 const text = postInput.value.trim();
                 const token = tokenInput.value.trim();
 
-                // Проверка ввода
-                Telegram.WebApp.showAlert('Шаг 2: Проверяем текст и токен...');
                 if (!text) {
-                    Telegram.WebApp.showAlert('Ошибка: Введите текст поста!');
+                    Telegram.WebApp.showAlert('Введите текст поста!');
                     return;
                 }
                 if (!token) {
-                    Telegram.WebApp.showAlert('Ошибка: Введите GitHub токен!');
+                    Telegram.WebApp.showAlert('Введите GitHub токен!');
                     return;
                 }
-
-                Telegram.WebApp.showAlert('Шаг 3: Проверки пройдены, начинаем отправку поста...');
 
                 const author = user.first_name || user.username || 'Аноним';
                 const newPost = { author, text, created_at: new Date().toISOString() };
 
-                // Проверка токена
-                Telegram.WebApp.showAlert('Шаг 4: Проверяем токен...');
-                const tokenCheckResponse = await fetch('https://api.github.com/user', {
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-                if (!tokenCheckResponse.ok) {
-                    const errorData = await tokenCheckResponse.json();
-                    throw new Error(`Ошибка проверки токена:\n- Статус: ${tokenCheckResponse.status}\n- Сообщение: ${errorData.message || 'Неизвестная ошибка'}\n- Токен (первые 10 символов): ${token.slice(0, 10)}...`);
-                }
-                Telegram.WebApp.showAlert('Шаг 5: Токен проверен успешно!');
-
                 // Получение текущих постов
-                Telegram.WebApp.showAlert('Шаг 6: Загружаем текущие посты...');
                 let posts = [];
                 const fetchUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}`;
                 const fetchResponse = await fetch(fetchUrl);
@@ -300,19 +275,15 @@
                 } else if (fetchResponse.status === 404) {
                     posts = []; // Если файла нет, создаём пустой массив
                 } else {
-                    throw new Error(`Не удалось загрузить posts.json:\n- Статус: ${fetchResponse.status}\n- URL: ${fetchUrl}\n- Проверьте наличие файла ${PATH} в репозитории`);
+                    throw new Error(`Ошибка загрузки постов (${fetchResponse.status})`);
                 }
 
-                Telegram.WebApp.showAlert('Шаг 7: Посты загружены, добавляем новый пост...');
                 posts.unshift(newPost);
 
                 // Получение SHA файла
-                Telegram.WebApp.showAlert('Шаг 8: Получаем SHA файла...');
                 const sha = await getFileSha(token);
-                Telegram.WebApp.showAlert('Шаг 9: SHA получен или файл будет создан (sha: ' + (sha || 'null') + ')');
 
                 // Обновление файла
-                Telegram.WebApp.showAlert('Шаг 10: Обновляем файл на GitHub...');
                 const updateUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
                 const response = await fetch(updateUrl, {
                     method: 'PUT',
@@ -330,14 +301,14 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(`Ошибка GitHub API:\n- Статус: ${response.status}\n- Сообщение: ${errorData.message}\n- Токен (первые 10 символов): ${token.slice(0, 10)}...\n- Репозиторий: ${OWNER}/${REPO}\n- Путь: ${PATH}\n- URL: ${updateUrl}`);
+                    throw new Error(`GitHub API Error (${response.status}): ${errorData.message}`);
                 }
 
-                Telegram.WebApp.showAlert('Шаг 11: Пост успешно добавлен!');
+                Telegram.WebApp.showAlert('Пост успешно добавлен!');
                 postInput.value = '';
                 fetchPosts();
             } catch (e) {
-                Telegram.WebApp.showAlert(`Ошибка при отправке поста:\n${e.message}`);
+                Telegram.WebApp.showAlert(`Ошибка: ${e.message}`);
             }
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
         };
