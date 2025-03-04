@@ -100,19 +100,37 @@
         .shop-item button:active { transform: scale(0.95); }
 
         .rating-item, .achievement {
-            padding: 20px;
+            padding: 15px;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 250, 255, 0.95));
-            margin: 15px 0;
+            margin: 10px 0;
             border-radius: 20px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             display: flex;
-            justify-content: space-between;
+            align-items: center;
             opacity: 1;
             transition: opacity 0.5s ease-out;
         }
 
-        .achievement { background: linear-gradient(45deg, #e0ffe0, #f0fff0); }
+        .rating-item .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+            background: #ccc;
+            overflow: hidden;
+        }
 
+        .rating-item .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .rating-item .info { flex: 1; }
+        .rating-item .username { font-weight: 600; color: #333; }
+        .rating-item .score { font-size: 14px; color: #777; }
+
+        .achievement { background: linear-gradient(45deg, #e0ffe0, #f0fff0); }
         .achievement.fade-out { opacity: 0; }
 
         .bottom-nav {
@@ -224,6 +242,7 @@
         <div id="rating" class="page">
             <div id="ratingMoney"></div>
             <div id="ratingRefs"></div>
+            <button class="settings-btn" id="syncRating">Обновить рейтинг</button>
         </div>
         <div id="settings" class="page">
             <div class="settings-container">
@@ -290,7 +309,9 @@
             doubleBonus: false,
             theme: 'light',
             lastSync: 0,
-            version: 1
+            version: 1,
+            username: Telegram.WebApp.initDataUnsafe.user?.username || 'Player',
+            photoUrl: Telegram.WebApp.initDataUnsafe.user?.photo_url || ''
         };
 
         const userId = Telegram.WebApp.initDataUnsafe.user?.id || 'test_user';
@@ -386,7 +407,26 @@
         document.getElementById('reset').addEventListener('click', () => {
             Telegram.WebApp.showConfirm('Сбросить прогресс?', (confirmed) => {
                 if (confirmed) {
-                    gameState = { money: 0, clickValue: 1, autoClick: 0, boostMultiplier: 1, boostTime: 0, multiplier: 1, clicks: 0, referrals: 0, lastBonus: 0, eventActive: false, eventEnd: 0, premium: false, doubleBonus: false, theme: 'light', lastSync: Date.now(), version: 1 };
+                    gameState = { 
+                        money: 0, 
+                        clickValue: 1, 
+                        autoClick: 0, 
+                        boostMultiplier: 1, 
+                        boostTime: 0, 
+                        multiplier: 1, 
+                        clicks: 0, 
+                        referrals: 0, 
+                        lastBonus: 0, 
+                        eventActive: false, 
+                        eventEnd: 0, 
+                        premium: false, 
+                        doubleBonus: false, 
+                        theme: 'light', 
+                        lastSync: Date.now(), 
+                        version: 1,
+                        username: Telegram.WebApp.initDataUnsafe.user?.username || 'Player',
+                        photoUrl: Telegram.WebApp.initDataUnsafe.user?.photo_url || ''
+                    };
                     updateDisplay();
                     saveGame(true);
                     updateRating();
@@ -422,6 +462,11 @@
             }
         });
 
+        document.getElementById('syncRating').addEventListener('click', () => {
+            updateRating();
+            Telegram.WebApp.showAlert('Рейтинг обновлен!');
+        });
+
         refLink.addEventListener('click', () => {
             const refUrl = refLink.textContent;
             navigator.clipboard.writeText(refUrl).then(() => {
@@ -449,8 +494,9 @@
         }, 60 * 1000);
 
         setInterval(() => {
-            loadGame();
-        }, 15000);
+            loadGame(true); // Принудительная синхронизация
+            updateRating();
+        }, 10000); // Уменьшено до 10 секунд для более частой синхронизации
 
         function updateDisplay() {
             moneyDisplay.textContent = Math.floor(gameState.money);
@@ -469,8 +515,8 @@
                 gameState.money += 50;
                 setTimeout(() => {
                     achievement.classList.add('fade-out');
-                    setTimeout(() => achievement.remove(), 500); // Удаление после завершения анимации
-                }, 5000); // Исчезает через 5 секунд
+                    setTimeout(() => achievement.remove(), 500);
+                }, 5000);
             }
             if (gameState.money >= 1000 && !achievements.querySelector('.money1000')) {
                 const achievement = document.createElement('div');
@@ -500,14 +546,14 @@
             }
         }
 
-        function loadGame() {
+        function loadGame(force = false) {
             Telegram.WebApp.CloudStorage.getItem(`gameState_${userId}`, (error, data) => {
                 if (error) {
                     console.error('Ошибка загрузки:', error);
                     saveGame(true);
                 } else if (data) {
                     const cloudState = JSON.parse(data);
-                    if (cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
+                    if (force || cloudState.lastSync > gameState.lastSync || !gameState.lastSync) {
                         gameState = { ...gameState, ...cloudState, version: 1 };
                         updateDisplay();
                         updateRating();
@@ -518,7 +564,7 @@
             });
         }
 
-        const updateRatingDebounced = debounce(updateRating, 2000);
+        const updateRatingDebounced = debounce(updateRating, 1000);
 
         function updateRating() {
             Telegram.WebApp.CloudStorage.getKeys((error, keys) => {
@@ -529,19 +575,38 @@
                     const allUsers = Object.entries(items)
                         .map(([key, value]) => {
                             const state = JSON.parse(value);
-                            return { id: key.split('_')[1], money: state.money, referrals: state.referrals };
+                            return { 
+                                id: key.split('_')[1], 
+                                money: state.money, 
+                                referrals: state.referrals, 
+                                username: state.username || 'Player', 
+                                photoUrl: state.photoUrl || ''
+                            };
                         })
                         .filter(user => user.money >= 0 && user.referrals >= 0);
+
                     allUsers.sort((a, b) => b.money - a.money);
-                    const moneyRating = allUsers.slice(0, 5).map((user, i) => 
-                        `<div class="rating-item">${i + 1}. ${user.id === userId ? 'Вы' : 'Игрок'} - ${Math.floor(user.money)} 💰</div>`
-                    ).join('');
+                    const moneyRating = allUsers.slice(0, 5).map((user, i) => `
+                        <div class="rating-item">
+                            <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
+                            <div class="info">
+                                <div class="username">${i + 1}. ${user.username}</div>
+                                <div class="score">${Math.floor(user.money)} 💰</div>
+                            </div>
+                        </div>
+                    `).join('');
                     document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3>' + moneyRating;
 
                     allUsers.sort((a, b) => b.referrals - a.referrals);
-                    const refRating = allUsers.slice(0, 5).map((user, i) => 
-                        `<div class="rating-item">${i + 1}. ${user.id === userId ? 'Вы' : 'Игрок'} - ${user.referrals} реф.</div>`
-                    ).join('');
+                    const refRating = allUsers.slice(0, 5).map((user, i) => `
+                        <div class="rating-item">
+                            <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
+                            <div class="info">
+                                <div class="username">${i + 1}. ${user.username}</div>
+                                <div class="score">${user.referrals} реф.</div>
+                            </div>
+                        </div>
+                    `).join('');
                     document.getElementById('ratingRefs').innerHTML = '<h3>По рефералам:</h3>' + refRating;
                 });
             });
