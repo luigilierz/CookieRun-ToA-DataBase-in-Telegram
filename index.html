@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мини-приложение Telegram</title>
+    <title>Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -14,8 +14,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            -webkit-user-select: none; /* Отключаем выделение для всего body */
-            user-select: none; /* Отключаем выделение текста */
+            user-select: none;
         }
 
         .content {
@@ -24,78 +23,165 @@
             overflow-y: auto;
         }
 
-        .page {
-            display: none;
-            font-size: 24px;
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .balance {
             text-align: center;
-            color: #333;
+            padding: 15px;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            font-size: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
 
-        .page.active {
+        .clicker-btn {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: none;
+            background: #007aff;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            margin: 20px auto;
             display: block;
+            transition: transform 0.1s;
+            position: relative;
+        }
+
+        .clicker-btn:active { transform: scale(0.95); }
+
+        .coin-animation {
+            position: absolute;
+            font-size: 20px;
+            color: gold;
+            animation: coinRise 1s ease-out forwards;
+        }
+
+        @keyframes coinRise {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        .shop-item {
+            display: flex;
+            padding: 10px;
+            margin: 10px;
+            background: white;
+            border-radius: 10px;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .shop-item button {
+            padding: 5px 15px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .rating-item {
+            padding: 10px;
+            background: white;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
         }
 
         .bottom-nav {
             position: fixed;
             bottom: 0;
             width: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             display: flex;
             justify-content: space-around;
             padding: 10px 0;
             border-top: 1px solid #e0e0e0;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            -webkit-user-select: none; /* Отключаем выделение для навигации */
-            user-select: none; /* Отключаем выделение текста */
         }
 
         .nav-item {
             text-align: center;
             cursor: pointer;
             transition: transform 0.2s;
-            -webkit-tap-highlight-color: transparent; /* Убираем подсветку при нажатии */
-            -webkit-user-select: none; /* Отключаем выделение для кнопок */
-            user-select: none; /* Отключаем выделение текста */
         }
 
-        .nav-item.active {
-            transform: scale(1.1);
-        }
+        .nav-item.active { transform: scale(1.1); }
+        .icon { display: block; font-size: 24px; }
+        .label { display: block; font-size: 12px; color: #666; }
+        .nav-item.active .label { color: #007aff; }
 
-        .icon {
-            display: block;
-            font-size: 24px;
-        }
-
-        .label {
-            display: block;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .nav-item.active .label {
-            color: #007aff;
+        .achievement {
+            padding: 10px;
+            margin: 5px;
+            background: #e0ffe0;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
     <div class="content">
-        <div id="home" class="page active">Добро пожаловать!</div>
-        <div id="profile" class="page">Твой профиль</div>
-        <div id="settings" class="page">Настройки</div>
+        <div id="home" class="page active">
+            <div class="balance">Баланс: <span id="money">0</span> 💰</div>
+            <button class="clicker-btn" id="clicker">+<span id="clickValue">1</span></button>
+            <div id="achievements">
+                <div class="achievement">Достижение: 100 кликов</div>
+            </div>
+            <button id="dailyBonus">Ежедневный бонус</button>
+        </div>
+        <div id="shop" class="page">
+            <div class="shop-item">
+                <span>🖱️ Улучшение клика</span>
+                <span>Цена: <span class="price">50</span> 💰</span>
+                <button data-upgrade="click">Купить</button>
+            </div>
+            <div class="shop-item">
+                <span>🤖 Автокликер</span>
+                <span>Цена: <span class="price">100</span> 💰</span>
+                <button data-upgrade="auto">Купить</button>
+            </div>
+            <div class="shop-item">
+                <span>✨ Бустер x2 (30 мин)</span>
+                <span>Цена: <span class="price">200</span> 💰</span>
+                <button data-upgrade="boost">Купить</button>
+            </div>
+        </div>
+        <div id="reit" class="page">
+            <div class="rating-list">
+                <div class="rating-item"><span>1. Игрок1</span><span>1000 💰</span></div>
+                <div class="rating-item"><span>2. Игрок2</span><span>800 💰</span></div>
+                <div class="rating-item"><span>3. Вы</span><span id="yourRating">0 💰</span></div>
+            </div>
+            <button id="shareRating">Поделиться</button>
+        </div>
+        <div id="settings" class="page">
+            <button id="reset">Сбросить прогресс</button>
+            <button id="sound">Звук: Вкл</button>
+            <button id="invite">Пригласить друга</button>
+            <div>Рефералов: <span id="referrals">0</span></div>
+            <div>Версия: 1.0.0</div>
+        </div>
     </div>
     <nav class="bottom-nav">
         <div class="nav-item" data-page="shop">
-            <span class="icon">🏠</span>
+            <span class="icon">🛒</span>
             <span class="label">Магазин</span>
         </div>
-        <div class="nav-item" data-page="home">
-            <span class="icon">👤</span>
-            <span class="label">Главная</span>
+        <div class="nav-item active" data-page="home">
+            <span class="icon">🎮</span>
+            <span class="label">Игра</span>
         </div>        
         <div class="nav-item" data-page="reit">
-            <span class="icon">⚙️</span>
+            <span class="icon">🏆</span>
             <span class="label">Рейтинг</span>
         </div>
         <div class="nav-item" data-page="settings">
@@ -104,33 +190,172 @@
         </div>
     </nav>
     <script>
-        // Инициализация Telegram Web App
         Telegram.WebApp.ready();
+        
+        // Инициализация темы
+        document.body.style.backgroundColor = Telegram.WebApp.themeParams.bg_color || '#f5f5f5';
 
-        // Элементы навигации и страниц
+        // Игровые переменные
+        let gameState = {
+            money: 0,
+            clickValue: 1,
+            autoClick: 0,
+            boostMultiplier: 1,
+            boostTime: 0,
+            clicks: 0,
+            referrals: 0,
+            sound: true,
+            lastBonus: 0
+        };
+
+        // Элементы DOM
+        const moneyDisplay = document.getElementById('money');
+        const clicker = document.getElementById('clicker');
+        const clickValueDisplay = document.getElementById('clickValue');
+        const yourRating = document.getElementById('yourRating');
+
+        // Загрузка сохранений
+        loadGame();
+
+        // Основной кликер
+        clicker.addEventListener('click', () => {
+            gameState.clicks++;
+            const earnings = gameState.clickValue * gameState.boostMultiplier;
+            gameState.money += earnings;
+            updateDisplay();
+            createCoinAnimation(earnings);
+            Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            checkAchievements();
+        });
+
+        // Анимация монет
+        function createCoinAnimation(amount) {
+            const coin = document.createElement('span');
+            coin.textContent = `+${amount}`;
+            coin.className = 'coin-animation';
+            coin.style.left = `${Math.random() * 100}px`;
+            clicker.appendChild(coin);
+            setTimeout(() => coin.remove(), 1000);
+        }
+
+        // Навигация
         const navItems = document.querySelectorAll('.nav-item');
         const pages = document.querySelectorAll('.page');
-
-        // Переключение страниц
         navItems.forEach(item => {
             item.addEventListener('click', () => {
                 const pageId = item.getAttribute('data-page');
-
-                // Убираем активный класс у всех
                 navItems.forEach(nav => nav.classList.remove('active'));
                 pages.forEach(page => page.classList.remove('active'));
-
-                // Добавляем активный класс выбранным
                 item.classList.add('active');
                 document.getElementById(pageId).classList.add('active');
-
-                // Виброотклик через Telegram API
                 Telegram.WebApp.HapticFeedback.impactOccurred('light');
             });
         });
 
-        // Устанавливаем "Главная" активной по умолчанию
-        document.querySelector('.nav-item[data-page="home"]').classList.add('active');
+        // Магазин
+        const shopButtons = document.querySelectorAll('.shop-item button');
+        shopButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const upgrade = button.getAttribute('data-upgrade');
+                const price = parseInt(button.previousElementSibling.querySelector('.price').textContent);
+                
+                if (gameState.money >= price) {
+                    gameState.money -= price;
+                    if (upgrade === 'click') gameState.clickValue += 1;
+                    if (upgrade === 'auto') gameState.autoClick += 1;
+                    if (upgrade === 'boost') {
+                        gameState.boostMultiplier = 2;
+                        gameState.boostTime = Date.now() + 30 * 60 * 1000;
+                    }
+                    updateDisplay();
+                    saveGame();
+                    Telegram.WebApp.showAlert(`Куплено: ${button.parentElement.firstElementChild.textContent}`);
+                } else {
+                    Telegram.WebApp.showAlert('Недостаточно средств!');
+                }
+            });
+        });
+
+        // Ежедневный бонус
+        document.getElementById('dailyBonus').addEventListener('click', () => {
+            const now = Date.now();
+            if (now - gameState.lastBonus >= 24 * 60 * 60 * 1000) {
+                gameState.money += 100;
+                gameState.lastBonus = now;
+                updateDisplay();
+                saveGame();
+                Telegram.WebApp.showAlert('Получен бонус: 100 💰');
+            } else {
+                Telegram.WebApp.showAlert('Бонус доступен раз в 24 часа!');
+            }
+        });
+
+        // Настройки
+        document.getElementById('reset').addEventListener('click', () => {
+            Telegram.WebApp.showConfirm('Сбросить прогресс?', (confirmed) => {
+                if (confirmed) {
+                    gameState = { money: 0, clickValue: 1, autoClick: 0, boostMultiplier: 1, boostTime: 0, clicks: 0, referrals: 0, sound: true, lastBonus: 0 };
+                    updateDisplay();
+                    saveGame();
+                }
+            });
+        });
+
+        document.getElementById('sound').addEventListener('click', (e) => {
+            gameState.sound = !gameState.sound;
+            e.target.textContent = `Звук: ${gameState.sound ? 'Вкл' : 'Выкл'}`;
+            saveGame();
+        });
+
+        document.getElementById('invite').addEventListener('click', () => {
+            Telegram.WebApp.showAlert('Приглашайте друзей по ссылке: t.me/yourbot?start=ref123');
+            gameState.referrals++;
+            gameState.money += 50;
+            updateDisplay();
+            saveGame();
+        });
+
+        document.getElementById('shareRating').addEventListener('click', () => {
+            Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=Мой результат в кликере: ${gameState.money} 💰!`);
+        });
+
+        // Автокликер и бустер
+        setInterval(() => {
+            gameState.money += gameState.autoClick * gameState.boostMultiplier;
+            if (gameState.boostTime && Date.now() > gameState.boostTime) {
+                gameState.boostMultiplier = 1;
+                gameState.boostTime = 0;
+            }
+            updateDisplay();
+            saveGame();
+        }, 1000);
+
+        // Обновление отображения
+        function updateDisplay() {
+            moneyDisplay.textContent = Math.floor(gameState.money);
+            clickValueDisplay.textContent = gameState.clickValue * gameState.boostMultiplier;
+            yourRating.textContent = `${Math.floor(gameState.money)} 💰`;
+            document.getElementById('referrals').textContent = gameState.referrals;
+        }
+
+        // Достижения
+        function checkAchievements() {
+            if (gameState.clicks === 100) {
+                document.getElementById('achievements').innerHTML += '<div class="achievement">Достижение: 100 кликов!</div>';
+                gameState.money += 50;
+            }
+        }
+
+        // Сохранение и загрузка
+        function saveGame() {
+            localStorage.setItem('clickerGame', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('clickerGame');
+            if (saved) gameState = JSON.parse(saved);
+            updateDisplay();
+        }
     </script>
 </body>
 </html>
