@@ -54,7 +54,6 @@
             margin: 30px auto;
             display: block;
             box-shadow: 0 12px 25px rgba(0, 122, 255, 0.4);
-            /* Убираем эффект сжатия при нажатии */
         }
 
         .coin-animation {
@@ -101,7 +100,6 @@
             font-size: 14px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
-            /* Убираем эффект сжатия при нажатии */
         }
 
         .rating-item, .achievement {
@@ -157,9 +155,16 @@
             padding: 8px;
         }
 
-        .nav-item.active svg { fill: #007aff; }
+        .nav-item.active img { 
+            filter: invert(41%) sepia(99%) saturate(1352%) hue-rotate(197deg) brightness(99%) contrast(101%); /* Цвет #007aff */
+        }
         .nav-item.active .label { color: #007aff; }
-        .nav-item svg { width: 28px; height: 28px; display: block; margin: 0 auto; }
+        .nav-item img { 
+            width: 28px; 
+            height: 28px; 
+            display: block; 
+            margin: 0 auto; 
+        }
         .nav-item .label { font-size: 11px; color: #666; margin-top: 4px; }
 
         .settings-btn {
@@ -173,7 +178,6 @@
             cursor: pointer;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             margin: 10px 0;
-            /* Убираем эффект сжатия при нажатии */
         }
 
         .debug-panel {
@@ -236,15 +240,15 @@
     </div>
     <nav class="bottom-nav">
         <div class="nav-item" data-page="shop">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17 18a2 2 0 012 2h-2v-2zm-10 0v2H5a2 2 0 012-2h2zm12-6H5a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2zM5 4v4h14V4H5zm14-2a2 2 0 012 2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h14z"/></svg>
+            <img src="Common_Icon_Shop_L.png" alt="Магазин">
             <span class="label">Магазин</span>
         </div>
         <div class="nav-item active" data-page="home">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 14l-4-4h8l-4 4z"/></svg>
+            <img src="Common_StoryMode_Icon_TimeAttack_1541458.png" alt="Игра">
             <span class="label">Игра</span>
         </div>
         <div class="nav-item" data-page="rating">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <img src="Common_Icon_Ranking.png" alt="Рейтинг">
             <span class="label">Рейтинг</span>
         </div>
     </nav>
@@ -252,15 +256,15 @@
         Telegram.WebApp.ready();
         document.body.style.backgroundColor = Telegram.WebApp.themeParams.bg_color || '#f5f7fa';
 
-        // Инициализация Firebase
+        // Инициализация Firebase (предполагается, что вы заменили на свои данные)
         const firebaseConfig = {
-            apiKey: "AIzaSyB4t7r9mc3b5p7uH2XqZ9zZ9zZ9zZ9zZ9", // Замените на ваш API Key
-            authDomain: "clicker-game-ranking.firebaseapp.com", // Замените на ваш authDomain
-            databaseURL: "https://clicker-game-ranking-default-rtdb.firebaseio.com", // Замените на ваш databaseURL
-            projectId: "clicker-game-ranking", // Замените на ваш projectId
-            storageBucket: "clicker-game-ranking.appspot.com", // Замените на ваш storageBucket
-            messagingSenderId: "123456789012", // Замените на ваш messagingSenderId
-            appId: "1:123456789012:web:abcdef1234567890abcdef" // Замените на ваш appId
+            apiKey: "AIzaSyB4t7r9mc3b5p7uH2XqZ9zZ9zZ9zZ9zZ9",
+            authDomain: "clicker-game-ranking.firebaseapp.com",
+            databaseURL: "https://clicker-game-ranking-default-rtdb.firebaseio.com",
+            projectId: "clicker-game-ranking",
+            storageBucket: "clicker-game-ranking.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890abcdef"
         };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -313,6 +317,7 @@
             Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             checkAchievements();
             saveGame();
+            debugLog(`Клик: +${earnings}, Новый баланс=${gameState.money}`);
         });
 
         function createCoinAnimation(amount) {
@@ -334,6 +339,7 @@
                 item.classList.add('active');
                 document.getElementById(pageId).classList.add('active');
                 Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                debugLog(`Переход на страницу: ${pageId}`);
             });
         });
 
@@ -344,15 +350,29 @@
                 const price = parseInt(button.previousElementSibling.textContent.match(/\d+/)[0]);
                 if (gameState.money >= price) {
                     gameState.money -= price;
-                    if (upgrade === 'click') gameState.clickValue += 1;
-                    if (upgrade === 'auto') gameState.autoClick += 1;
-                    if (upgrade === 'boost') { gameState.boostMultiplier = 2; gameState.boostTime = Date.now() + 30 * 60 * 1000; }
-                    if (upgrade === 'premium') gameState.premium = true;
+                    if (upgrade === 'click') {
+                        gameState.clickValue += 1;
+                        debugLog(`Куплено улучшение клика: clickValue=${gameState.clickValue}`);
+                    }
+                    if (upgrade === 'auto') {
+                        gameState.autoClick += 1;
+                        debugLog(`Куплен автокликер: autoClick=${gameState.autoClick}`);
+                    }
+                    if (upgrade === 'boost') {
+                        gameState.boostMultiplier = 2;
+                        gameState.boostTime = Date.now() + 30 * 60 * 1000;
+                        debugLog(`Куплен бустер x2: boostMultiplier=${gameState.boostMultiplier}`);
+                    }
+                    if (upgrade === 'premium') {
+                        gameState.premium = true;
+                        debugLog(`Куплен премиум-эффект`);
+                    }
                     updateDisplay();
                     saveGame();
                     Telegram.WebApp.showAlert('Куплено!');
                 } else {
                     Telegram.WebApp.showAlert('Недостаточно средств!');
+                    debugLog(`Не хватает средств для покупки: нужно ${price}, есть ${gameState.money}`);
                 }
             });
         });
@@ -360,12 +380,21 @@
         document.getElementById('syncRating').addEventListener('click', () => {
             updateRating();
             Telegram.WebApp.showAlert('Рейтинг обновлен!');
+            debugLog('Рейтинг обновлен вручную');
         });
 
         setInterval(() => {
             gameState.money += gameState.autoClick * gameState.boostMultiplier * gameState.multiplier * (gameState.eventActive ? 2 : 1);
-            if (gameState.boostTime && Date.now() > gameState.boostTime) { gameState.boostMultiplier = 1; gameState.boostTime = 0; }
-            if (gameState.eventEnd && Date.now() > gameState.eventEnd) { gameState.eventActive = false; gameState.eventEnd = 0; }
+            if (gameState.boostTime && Date.now() > gameState.boostTime) { 
+                gameState.boostMultiplier = 1; 
+                gameState.boostTime = 0; 
+                debugLog('Бустер закончился');
+            }
+            if (gameState.eventEnd && Date.now() > gameState.eventEnd) { 
+                gameState.eventActive = false; 
+                gameState.eventEnd = 0; 
+                debugLog('Событие закончилось');
+            }
             updateDisplay();
             saveGame();
         }, 1000);
@@ -376,6 +405,7 @@
                 gameState.eventEnd = Date.now() + 60 * 60 * 1000;
                 Telegram.WebApp.showAlert('Событие: x2 доход на 1 час!');
                 saveGame();
+                debugLog('Запущено событие: x2 доход на 1 час');
             }
         }, 60 * 1000);
 
@@ -402,6 +432,7 @@
                     achievement.classList.add('fade-out');
                     setTimeout(() => achievement.remove(), 500);
                 }, 5000);
+                debugLog('Достижение: 100 кликов, бонус +50');
             }
             if (gameState.money >= 1000 && !achievements.querySelector('.money1000')) {
                 const achievement = document.createElement('div');
@@ -413,6 +444,7 @@
                     achievement.classList.add('fade-out');
                     setTimeout(() => achievement.remove(), 500);
                 }, 5000);
+                debugLog('Достижение: 1000 монет, бонус +100');
             }
         }
 
@@ -422,7 +454,7 @@
                 gameState.lastSync = now;
                 // Сохраняем локально
                 localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState));
-                debugLog('Сохранено локально: Баланс=' + gameState.money);
+                debugLog('Сохранено локально: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
 
                 // Сохраняем на сервер Firebase
                 database.ref('players/' + userId).set({
@@ -446,7 +478,7 @@
                     if (error) {
                         debugLog('Ошибка сохранения на сервер: ' + error);
                     } else {
-                        debugLog('Сохранено на сервер: Баланс=' + gameState.money);
+                        debugLog('Сохранено на сервер: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
                     }
                 });
             }
@@ -455,35 +487,46 @@
         function loadGame() {
             const localData = localStorage.getItem(`gameState_${userId}`);
             if (localData) {
-                const parsed = JSON.parse(localData);
-                gameState = { ...gameState, ...parsed };
-                updateDisplay();
-                debugLog('Загружено локально: Баланс=' + gameState.money);
+                try {
+                    const parsed = JSON.parse(localData);
+                    gameState = { ...gameState, ...parsed };
+                    updateDisplay();
+                    debugLog('Загружено локально: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
+                } catch (e) {
+                    debugLog('Ошибка парсинга локальных данных: ' + e.message);
+                }
             }
 
             // Загружаем с сервера Firebase
             database.ref('players/' + userId).once('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data && (!gameState.lastSync || data.lastSync > gameState.lastSync)) {
-                    gameState.money = data.money || 0;
-                    gameState.referrals = data.referrals || 0;
-                    gameState.username = data.username || gameState.username;
-                    gameState.photoUrl = data.photoUrl || gameState.photoUrl;
-                    gameState.clicks = data.clicks || 0;
-                    gameState.clickValue = data.clickValue || 1;
-                    gameState.autoClick = data.autoClick || 0;
-                    gameState.boostMultiplier = data.boostMultiplier || 1;
-                    gameState.boostTime = data.boostTime || 0;
-                    gameState.multiplier = data.multiplier || 1;
-                    gameState.lastBonus = data.lastBonus || 0;
-                    gameState.eventActive = data.eventActive || false;
-                    gameState.eventEnd = data.eventEnd || 0;
-                    gameState.premium = data.premium || false;
-                    gameState.doubleBonus = data.doubleBonus || false;
-                    gameState.lastSync = data.lastSync || Date.now();
-                    updateDisplay();
-                    localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState)); // Обновляем локальное хранилище
-                    debugLog('Загружено с сервера: Баланс=' + gameState.money);
+                    // Проверяем, что данные валидны
+                    if (typeof data.money === 'number' && typeof data.clicks === 'number') {
+                        gameState.money = data.money || 0;
+                        gameState.referrals = data.referrals || 0;
+                        gameState.username = data.username || gameState.username;
+                        gameState.photoUrl = data.photoUrl || gameState.photoUrl;
+                        gameState.clicks = data.clicks || 0;
+                        gameState.clickValue = data.clickValue || 1;
+                        gameState.autoClick = data.autoClick || 0;
+                        gameState.boostMultiplier = data.boostMultiplier || 1;
+                        gameState.boostTime = data.boostTime || 0;
+                        gameState.multiplier = data.multiplier || 1;
+                        gameState.lastBonus = data.lastBonus || 0;
+                        gameState.eventActive = data.eventActive || false;
+                        gameState.eventEnd = data.eventEnd || 0;
+                        gameState.premium = data.premium || false;
+                        gameState.doubleBonus = data.doubleBonus || false;
+                        gameState.lastSync = data.lastSync || Date.now();
+                        updateDisplay();
+                        localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState)); // Обновляем локальное хранилище
+                        debugLog('Загружено с сервера: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
+                    } else {
+                        debugLog('Данные с сервера повреждены, используются локальные');
+                    }
+                } else {
+                    debugLog('Нет новых данных на сервере или серверные данные старее локальных');
                 }
             }, (error) => {
                 debugLog('Ошибка загрузки с сервера: ' + error);
@@ -500,8 +543,6 @@
                     return;
                 }
 
-                debugLog('Рейтинг: Загружено ' + Object.keys(allPlayers).length + ' игроков');
-
                 const allUsers = Object.entries(allPlayers)
                     .map(([id, data]) => ({
                         id,
@@ -511,6 +552,8 @@
                         photoUrl: data.photoUrl || ''
                     }))
                     .filter(user => user.money >= 0 && user.referrals >= 0);
+
+                debugLog('Рейтинг: Загружено ' + allUsers.length + ' игроков');
 
                 allUsers.sort((a, b) => b.money - a.money);
                 const moneyRating = allUsers.slice(0, 5).map((user, i) => `
