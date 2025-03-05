@@ -140,8 +140,7 @@
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 245, 255, 0.9));
             backdrop-filter: blur(20px);
             display: flex;
-            justify-content: space-around;
-            padding: 15px 0;
+            justify-content: stretch; /* Кнопки растягиваются на всю ширину без промежутков */
             border-top: 1px solid rgba(0, 0, 0, 0.05);
             box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.1);
             position: fixed;
@@ -150,9 +149,10 @@
         }
 
         .nav-item {
+            flex: 1; /* Каждая кнопка занимает равное пространство */
             text-align: center;
             cursor: pointer;
-            padding: 8px;
+            padding: 0; /* Убираем внутренние отступы */
             transition: background-color 0.3s; /* Плавный переход фона */
         }
 
@@ -164,12 +164,12 @@
             width: 28px; 
             height: 28px; 
             display: block; 
-            margin: 0 auto; 
+            margin: 8px auto 4px; /* Отступы сверху и снизу для иконки */
         }
         .nav-item .label { 
             font-size: 11px; 
             color: #666; 
-            margin-top: 4px; 
+            margin-bottom: 8px; /* Отступ снизу для текста */
         }
 
         .settings-btn {
