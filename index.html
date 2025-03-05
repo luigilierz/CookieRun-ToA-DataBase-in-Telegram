@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Отключаем масштабирование -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
     <title>Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Подключаем Firebase SDK -->
@@ -19,7 +20,10 @@
             overflow: hidden;
             user-select: none;
             -webkit-font-smoothing: antialiased;
-            transition: background 0.5s;
+            /* Отключаем выделение при касании */
+            -webkit-tap-highlight-color: transparent;
+            /* Отключаем масштабирование через жесты */
+            touch-action: manipulation;
         }
 
         .content { flex: 1; padding: 20px; overflow-y: auto; }
@@ -50,9 +54,8 @@
             margin: 30px auto;
             display: block;
             box-shadow: 0 12px 25px rgba(0, 122, 255, 0.4);
+            /* Убираем эффект сжатия при нажатии */
         }
-
-        .clicker-btn:active { transform: scale(0.95); }
 
         .coin-animation {
             position: absolute;
@@ -98,9 +101,8 @@
             font-size: 14px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+            /* Убираем эффект сжатия при нажатии */
         }
-
-        .shop-item button:active { transform: scale(0.95); }
 
         .rating-item, .achievement {
             padding: 15px;
@@ -171,9 +173,8 @@
             cursor: pointer;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             margin: 10px 0;
+            /* Убираем эффект сжатия при нажатии */
         }
-
-        .settings-btn:active { transform: scale(0.98); }
 
         .debug-panel {
             padding: 15px;
@@ -429,6 +430,17 @@
                     referrals: gameState.referrals,
                     username: gameState.username,
                     photoUrl: gameState.photoUrl,
+                    clicks: gameState.clicks,
+                    clickValue: gameState.clickValue,
+                    autoClick: gameState.autoClick,
+                    boostMultiplier: gameState.boostMultiplier,
+                    boostTime: gameState.boostTime,
+                    multiplier: gameState.multiplier,
+                    lastBonus: gameState.lastBonus,
+                    eventActive: gameState.eventActive,
+                    eventEnd: gameState.eventEnd,
+                    premium: gameState.premium,
+                    doubleBonus: gameState.doubleBonus,
                     lastSync: now
                 }, (error) => {
                     if (error) {
