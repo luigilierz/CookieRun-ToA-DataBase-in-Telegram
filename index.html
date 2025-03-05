@@ -160,21 +160,6 @@
         .nav-item svg { width: 28px; height: 28px; display: block; margin: 0 auto; }
         .nav-item .label { font-size: 11px; color: #666; margin-top: 4px; }
 
-        .settings-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .settings-main, .settings-sub > div {
-            padding: 20px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 250, 255, 0.95));
-            border-radius: 25px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-            font-size: 16px;
-            font-weight: 500;
-        }
-
         .settings-btn {
             padding: 15px;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 250, 255, 0.95));
@@ -189,19 +174,6 @@
         }
 
         .settings-btn:active { transform: scale(0.98); }
-
-        .ref-link {
-            padding: 10px;
-            background: rgba(240, 245, 255, 0.95);
-            border-radius: 15px;
-            margin-top: 10px;
-            font-size: 12px;
-            word-break: break-all;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .ref-link:active { background: rgba(245, 250, 255, 1); }
 
         .debug-panel {
             padding: 15px;
@@ -260,32 +232,6 @@
             <div id="ratingRefs"></div>
             <button class="settings-btn" id="syncRating">Обновить рейтинг</button>
         </div>
-        <div id="settings" class="page">
-            <div class="settings-container">
-                <div class="settings-main">
-                    <h3>Настройки</h3>
-                    <button class="settings-btn" id="theme">Тема: Светлая</button>
-                    <button class="settings-btn" id="reset">Сбросить прогресс</button>
-                    <div>Версия: 1.0.0</div>
-                </div>
-                <div class="settings-sub">
-                    <div>
-                        <h3>Бонусы</h3>
-                        <button class="settings-btn" id="dailyBonus">Ежедневный бонус (100 💰)</button>
-                        <button class="settings-btn" id="watchAd">Смотреть рекламу (50 💰)</button>
-                        <button class="settings-btn" id="doubleBonus">Подписка x2 бонусы</button>
-                    </div>
-                    <div>
-                        <h3>Социальное</h3>
-                        <button class="settings-btn" id="invite">Показать реф. ссылку</button>
-                        <button class="settings-btn" id="shareRating">Поделиться результатом</button>
-                        <button class="settings-btn" id="sendGift">Отправить подарок (50 💰)</button>
-                        <div class="rating-item">Рефералов: <span id="referrals">0</span></div>
-                        <div class="ref-link" id="refLink">Нажми "Показать реф. ссылку" выше</div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
     <nav class="bottom-nav">
         <div class="nav-item" data-page="shop">
@@ -299,10 +245,6 @@
         <div class="nav-item" data-page="rating">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             <span class="label">Рейтинг</span>
-        </div>
-        <div class="nav-item" data-page="settings">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94a7.2 7.2 0 00-.14-1.88l2.06-1.62a1 1 0 00.24-1.28l-2-3.46a1 1 0 00-1.22-.36l-2.42 1a7.2 7.2 0 00-3.26-1.88l-.46-2.58A1 1 0 0011 0H9a1 1 0 00-.94.58L7.6 3.16A7.2 7.2 0 004.34 5.04l-2.42-1a1 1 0 00-1.22.36l-2 3.46a1 1 0 00.24 1.28l2.06 1.62a7.2 7.2 0 00-.14 1.88l-2.06 1.62a1 1 0 00-.24 1.28l2 3.46a1 1 0 001.22.36l2.42-1a7.2 7.2 0 003.26 1.88l.46 2.58A1 1 0 009 24h2a1 1 0 00.94-.58l.46-2.58a7.2 7.2 0 003.26-1.88l2.42 1a1 1 0 001.22-.36l2-3.46a1 1 0 00-.24-1.28l-2.06-1.62zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
-            <span class="label">Настройки</span>
         </div>
     </nav>
     <script>
@@ -336,7 +278,6 @@
             eventEnd: 0,
             premium: false,
             doubleBonus: false,
-            theme: 'light',
             lastSync: 0,
             version: 1,
             username: Telegram.WebApp.initDataUnsafe.user?.username || 'Player',
@@ -344,13 +285,11 @@
         };
 
         const userId = Telegram.WebApp.initDataUnsafe.user?.id || 'test_user';
-        const botUsername = '@crtoabot';
 
         const moneyDisplay = document.getElementById('money');
         const clicker = document.getElementById('clicker');
         const clickValueDisplay = document.getElementById('clickValue');
         const boostTimer = document.getElementById('boostTimer');
-        const refLink = document.getElementById('refLink');
         const debugPanel = document.getElementById('debugPanel');
 
         // Функция для логирования в панель
@@ -361,7 +300,7 @@
             panel.scrollTop = panel.scrollHeight;
         }
 
-        // Загрузка данных из localStorage
+        // Загрузка данных
         loadGame();
 
         clicker.addEventListener('click', () => {
@@ -417,102 +356,9 @@
             });
         });
 
-        document.getElementById('dailyBonus').addEventListener('click', () => {
-            const now = Date.now();
-            if (now - gameState.lastBonus >= 24 * 60 * 60 * 1000) {
-                gameState.money += gameState.doubleBonus ? 200 : 100;
-                gameState.lastBonus = now;
-                updateDisplay();
-                saveGame();
-                Telegram.WebApp.showAlert(`Бонус: ${gameState.doubleBonus ? 200 : 100} 💰`);
-            } else {
-                Telegram.WebApp.showAlert('Бонус раз в 24 часа!');
-            }
-        });
-
-        document.getElementById('watchAd').addEventListener('click', () => {
-            gameState.money += gameState.doubleBonus ? 100 : 50;
-            updateDisplay();
-            saveGame();
-            Telegram.WebApp.showAlert(`Реклама: +${gameState.doubleBonus ? 100 : 50} 💰`);
-        });
-
-        document.getElementById('doubleBonus').addEventListener('click', () => {
-            Telegram.WebApp.showAlert('Подписка активирована!');
-            gameState.doubleBonus = true;
-            saveGame();
-        });
-
-        document.getElementById('reset').addEventListener('click', () => {
-            Telegram.WebApp.showConfirm('Сбросить прогресс?', (confirmed) => {
-                if (confirmed) {
-                    gameState = { 
-                        money: 0, 
-                        clickValue: 1, 
-                        autoClick: 0, 
-                        boostMultiplier: 1, 
-                        boostTime: 0, 
-                        multiplier: 1, 
-                        clicks: 0, 
-                        referrals: 0, 
-                        lastBonus: 0, 
-                        eventActive: false, 
-                        eventEnd: 0, 
-                        premium: false, 
-                        doubleBonus: false, 
-                        theme: 'light', 
-                        lastSync: Date.now(), 
-                        version: 1,
-                        username: Telegram.WebApp.initDataUnsafe.user?.username || 'Player',
-                        photoUrl: Telegram.WebApp.initDataUnsafe.user?.photo_url || ''
-                    };
-                    updateDisplay();
-                    saveGame(true);
-                    updateRating();
-                }
-            });
-        });
-
-        document.getElementById('theme').addEventListener('click', (e) => {
-            gameState.theme = gameState.theme === 'light' ? 'dark' : 'light';
-            document.body.style.background = gameState.theme === 'light' ? 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' : 'linear-gradient(135deg, #1e2a44 0%, #3b4a6b 100%)';
-            e.target.textContent = `Тема: ${gameState.theme === 'light' ? 'Светлая' : 'Темная'}`;
-            saveGame();
-        });
-
-        document.getElementById('invite').addEventListener('click', () => {
-            const refUrl = `t.me/${botUsername}?start=ref${userId}`;
-            refLink.textContent = refUrl;
-            Telegram.WebApp.showAlert('Ссылка обновлена ниже. Нажми на нее, чтобы скопировать!');
-        });
-
-        document.getElementById('shareRating').addEventListener('click', () => {
-            Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=Мой результат: ${gameState.money} 💰`);
-        });
-
-        document.getElementById('sendGift').addEventListener('click', () => {
-            if (gameState.money >= 50) {
-                gameState.money -= 50;
-                updateDisplay();
-                saveGame();
-                Telegram.WebApp.showAlert('Подарок отправлен!');
-            } else {
-                Telegram.WebApp.showAlert('Недостаточно средств!');
-            }
-        });
-
         document.getElementById('syncRating').addEventListener('click', () => {
             updateRating();
             Telegram.WebApp.showAlert('Рейтинг обновлен!');
-        });
-
-        refLink.addEventListener('click', () => {
-            const refUrl = refLink.textContent;
-            navigator.clipboard.writeText(refUrl).then(() => {
-                Telegram.WebApp.showAlert('Ссылка скопирована в буфер обмена!');
-            }).catch(() => {
-                Telegram.WebApp.showAlert('Ошибка копирования, скопируйте вручную: ' + refUrl);
-            });
         });
 
         setInterval(() => {
@@ -541,7 +387,6 @@
             moneyDisplay.textContent = Math.floor(gameState.money);
             clickValueDisplay.textContent = Math.floor(gameState.clickValue * gameState.boostMultiplier * gameState.multiplier * (gameState.eventActive ? 2 : 1));
             boostTimer.textContent = gameState.boostTime ? `Бустер: ${Math.ceil((gameState.boostTime - Date.now()) / 1000)} сек` : (gameState.eventActive ? `Событие: ${Math.ceil((gameState.eventEnd - Date.now()) / 1000)} сек` : '');
-            document.getElementById('referrals').textContent = gameState.referrals;
         }
 
         function checkAchievements() {
@@ -578,7 +423,7 @@
                 localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState));
                 debugLog('Сохранено локально: Баланс=' + gameState.money);
 
-                // Сохраняем на сервер
+                // Сохраняем на сервер Firebase
                 database.ref('players/' + userId).set({
                     money: gameState.money,
                     referrals: gameState.referrals,
@@ -604,16 +449,28 @@
                 debugLog('Загружено локально: Баланс=' + gameState.money);
             }
 
-            // Загружаем с сервера
+            // Загружаем с сервера Firebase
             database.ref('players/' + userId).once('value', (snapshot) => {
                 const data = snapshot.val();
-                if (data && data.lastSync > gameState.lastSync) {
+                if (data && (!gameState.lastSync || data.lastSync > gameState.lastSync)) {
                     gameState.money = data.money || 0;
                     gameState.referrals = data.referrals || 0;
                     gameState.username = data.username || gameState.username;
                     gameState.photoUrl = data.photoUrl || gameState.photoUrl;
+                    gameState.clicks = data.clicks || 0;
+                    gameState.clickValue = data.clickValue || 1;
+                    gameState.autoClick = data.autoClick || 0;
+                    gameState.boostMultiplier = data.boostMultiplier || 1;
+                    gameState.boostTime = data.boostTime || 0;
+                    gameState.multiplier = data.multiplier || 1;
+                    gameState.lastBonus = data.lastBonus || 0;
+                    gameState.eventActive = data.eventActive || false;
+                    gameState.eventEnd = data.eventEnd || 0;
+                    gameState.premium = data.premium || false;
+                    gameState.doubleBonus = data.doubleBonus || false;
                     gameState.lastSync = data.lastSync || Date.now();
                     updateDisplay();
+                    localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState)); // Обновляем локальное хранилище
                     debugLog('Загружено с сервера: Баланс=' + gameState.money);
                 }
             }, (error) => {
@@ -671,16 +528,7 @@
             });
         }
 
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
-        // Убираем Service Worker, так как он не используется
-        debugLog('Service Worker отключен из-за отсутствия sw.js');
+        debugLog('Инициализация завершена');
     </script>
 </body>
 </html>
