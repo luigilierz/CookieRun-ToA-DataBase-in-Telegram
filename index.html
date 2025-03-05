@@ -134,7 +134,7 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        .rating-item, .achievement {
+        .rating-item {
             padding: 15px;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 250, 255, 0.95));
             margin: 10px 0;
@@ -164,9 +164,6 @@
         .rating-item .info { flex: 1; }
         .rating-item .username { font-weight: 600; color: #333; }
         .rating-item .score { font-size: 14px; color: #777; }
-
-        .achievement { background: linear-gradient(45deg, #e0ffe0, #f0fff0); }
-        .achievement.fade-out { opacity: 0; }
 
         .bottom-nav {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 245, 255, 0.9));
@@ -216,18 +213,6 @@
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
             margin: 10px 0;
         }
-
-        .debug-panel {
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-            margin-top: 15px;
-            font-size: 12px;
-            max-height: 150px;
-            overflow-y: auto;
-            color: #333;
-        }
     </style>
 </head>
 <body>
@@ -238,8 +223,6 @@
                 <div id="boostTimer"></div>
             </div>
             <button class="clicker-btn" id="clicker">+<span id="clickValue">1</span></button>
-            <div id="achievements"></div>
-            <div class="debug-panel" id="debugPanel"></div>
         </div>
         <div id="shop" class="page">
             <div class="balance">
@@ -344,15 +327,6 @@
         const clicker = document.getElementById('clicker');
         const clickValueDisplay = document.getElementById('clickValue');
         const boostTimer = document.getElementById('boostTimer');
-        const debugPanel = document.getElementById('debugPanel');
-
-        // Функция для логирования в панель
-        function debugLog(message) {
-            const panel = document.getElementById('debugPanel');
-            const time = new Date().toLocaleTimeString();
-            panel.innerHTML += `[${time}] ${message}<br>`;
-            panel.scrollTop = panel.scrollHeight;
-        }
 
         // Загрузка данных
         loadGame();
@@ -364,9 +338,7 @@
             updateDisplay();
             createCoinAnimation(earnings);
             Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-            checkAchievements();
             saveGame();
-            debugLog(`Клик: +${earnings}, Новый баланс=${gameState.money}`);
         });
 
         function createCoinAnimation(amount) {
@@ -388,7 +360,6 @@
                 item.classList.add('active');
                 document.getElementById(pageId).classList.add('active');
                 Telegram.WebApp.HapticFeedback.impactOccurred('light');
-                debugLog(`Переход на страницу: ${pageId}`);
             });
         });
 
@@ -404,27 +375,21 @@
                     gameState.money -= totalPrice;
                     if (upgrade === 'click') {
                         gameState.clickValue += quantity;
-                        debugLog(`Куплено улучшение клика (${quantity} шт.): clickValue=${gameState.clickValue}`);
                     }
                     if (upgrade === 'auto') {
                         gameState.autoClick += quantity;
-                        debugLog(`Куплен автокликер (${quantity} шт.): autoClick=${gameState.autoClick}`);
                     }
                     if (upgrade === 'boost') {
                         gameState.boostMultiplier = 2;
-                        gameState.boostTime = Date.now() + 30 * 60 * 1000 * quantity; // Увеличиваем время бустера пропорционально количеству
-                        debugLog(`Куплен бустер x2 (${quantity} шт.): boostMultiplier=${gameState.boostMultiplier}, время=${gameState.boostTime}`);
+                        gameState.boostTime = Date.now() + 30 * 60 * 1000 * quantity;
                     }
                     if (upgrade === 'premium') {
                         gameState.premium = true;
-                        debugLog(`Куплен премиум-эффект (${quantity} шт.)`);
                     }
                     updateDisplay();
                     saveGame();
-                    Telegram.WebApp.showAlert(`Куплено ${quantity} шт.!`);
                 } else {
                     Telegram.WebApp.showAlert('Недостаточно средств!');
-                    debugLog(`Не хватает средств для покупки: нужно ${totalPrice}, есть ${gameState.money}`);
                 }
             });
         });
@@ -441,7 +406,6 @@
         document.getElementById('syncRating').addEventListener('click', () => {
             updateRating();
             Telegram.WebApp.showAlert('Рейтинг обновлен!');
-            debugLog('Рейтинг обновлен вручную');
         });
 
         setInterval(() => {
@@ -449,12 +413,10 @@
             if (gameState.boostTime && Date.now() > gameState.boostTime) { 
                 gameState.boostMultiplier = 1; 
                 gameState.boostTime = 0; 
-                debugLog('Бустер закончился');
             }
             if (gameState.eventEnd && Date.now() > gameState.eventEnd) { 
                 gameState.eventActive = false; 
                 gameState.eventEnd = 0; 
-                debugLog('Событие закончилось');
             }
             updateDisplay();
             saveGame();
@@ -466,7 +428,6 @@
                 gameState.eventEnd = Date.now() + 60 * 60 * 1000;
                 Telegram.WebApp.showAlert('Событие: x2 доход на 1 час!');
                 saveGame();
-                debugLog('Запущено событие: x2 доход на 1 час');
             }
         }, 60 * 1000);
 
@@ -482,43 +443,14 @@
             boostTimer.textContent = gameState.boostTime ? `Бустер: ${Math.ceil((gameState.boostTime - Date.now()) / 1000)} сек` : (gameState.eventActive ? `Событие: ${Math.ceil((gameState.eventEnd - Date.now()) / 1000)} сек` : '');
         }
 
-        function checkAchievements() {
-            const achievements = document.getElementById('achievements');
-            if (gameState.clicks >= 100 && !achievements.querySelector('.click100')) {
-                const achievement = document.createElement('div');
-                achievement.className = 'achievement click100';
-                achievement.textContent = '100 кликов! (+50 💰)';
-                achievements.appendChild(achievement);
-                gameState.money += 50;
-                setTimeout(() => {
-                    achievement.classList.add('fade-out');
-                    setTimeout(() => achievement.remove(), 500);
-                }, 5000);
-                debugLog('Достижение: 100 кликов, бонус +50');
-            }
-            if (gameState.money >= 1000 && !achievements.querySelector('.money1000')) {
-                const achievement = document.createElement('div');
-                achievement.className = 'achievement money1000';
-                achievement.textContent = '1000 монет! (+100 💰)';
-                achievements.appendChild(achievement);
-                gameState.money += 100;
-                setTimeout(() => {
-                    achievement.classList.add('fade-out');
-                    setTimeout(() => achievement.remove(), 500);
-                }, 5000);
-                debugLog('Достижение: 1000 монет, бонус +100');
-            }
-        }
-
-        function saveGame(force = false) {
+        function saveGame() {
             const now = Date.now();
-            if (force || now - gameState.lastSync >= 5000) {
-                gameState.lastSync = now;
-                // Сохраняем локально
-                localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState));
-                debugLog('Сохранено локально: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
+            gameState.lastSync = now;
+            // Сохраняем локально
+            localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState));
 
-                // Сохраняем на сервер Firebase
+            // Сохраняем на сервер Firebase с небольшой задержкой (1 секунда)
+            setTimeout(() => {
                 database.ref('players/' + userId).set({
                     money: gameState.money,
                     referrals: gameState.referrals,
@@ -536,14 +468,8 @@
                     premium: gameState.premium,
                     doubleBonus: gameState.doubleBonus,
                     lastSync: now
-                }, (error) => {
-                    if (error) {
-                        debugLog('Ошибка сохранения на сервер: ' + error);
-                    } else {
-                        debugLog('Сохранено на сервер: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
-                    }
                 });
-            }
+            }, 1000);
         }
 
         function loadGame() {
@@ -553,9 +479,8 @@
                     const parsed = JSON.parse(localData);
                     gameState = { ...gameState, ...parsed };
                     updateDisplay();
-                    debugLog('Загружено локально: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
                 } catch (e) {
-                    debugLog('Ошибка парсинга локальных данных: ' + e.message);
+                    console.error('Ошибка парсинга локальных данных:', e);
                 }
             }
 
@@ -582,15 +507,14 @@
                         gameState.lastSync = data.lastSync || Date.now();
                         updateDisplay();
                         localStorage.setItem(`gameState_${userId}`, JSON.stringify(gameState));
-                        debugLog('Загружено с сервера: Баланс=' + gameState.money + ', Клики=' + gameState.clicks);
                     } else {
-                        debugLog('Данные с сервера повреждены, используются локальные');
+                        console.error('Данные с сервера повреждены, используются локальные');
                     }
                 } else {
-                    debugLog('Нет новых данных на сервере или серверные данные старее локальных');
+                    console.error('Нет новых данных на сервере или серверные данные старее локальных');
                 }
             }, (error) => {
-                debugLog('Ошибка загрузки с сервера: ' + error);
+                console.error('Ошибка загрузки с сервера:', error);
             });
         }
 
@@ -599,7 +523,6 @@
                 const allPlayers = snapshot.val();
                 if (!allPlayers) {
                     document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3><p>Пока нет игроков</p>';
-                    debugLog('Рейтинг: Нет игроков на сервере');
                     return;
                 }
 
@@ -612,10 +535,8 @@
                     }))
                     .filter(user => user.money >= 0);
 
-                debugLog('Рейтинг: Загружено ' + allUsers.length + ' игроков');
-
                 allUsers.sort((a, b) => b.money - a.money);
-                const moneyRating = allUsers.slice(0, 5).map((user, i) => `
+                const moneyRating = allUsers.map((user, i) => `
                     <div class="rating-item">
                         <div class="avatar">${user.photoUrl ? `<img src="${user.photoUrl}" alt="${user.username}">` : ''}</div>
                         <div class="info">
@@ -626,11 +547,9 @@
                 `).join('');
                 document.getElementById('ratingMoney').innerHTML = '<h3>По деньгам:</h3>' + moneyRating;
             }, (error) => {
-                debugLog('Ошибка загрузки рейтинга: ' + error);
+                console.error('Ошибка загрузки рейтинга:', error);
             });
         }
-
-        debugLog('Инициализация завершена');
     </script>
 </body>
 </html>
